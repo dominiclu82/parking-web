@@ -767,7 +767,7 @@
         '<a class="comm" href="' + LINE_URL + '" target="_blank" rel="noopener">💬 ' +
           T('社群討論', 'Community') + '<div class="sub2">' + T('可匿名 Anonymous', 'Anonymous') + '</div></a>' +
         '<a class="priv" id="clReport" href="' + reportMailto() + '">🔒 ' +
-          T('私下回報', 'Private report') + '<div class="sub2">' + T('寄信給站長 Email', 'Email') + '</div></a>' +
+          T('私下回報', 'Private report') + '<div class="sub2">' + T('不公開 Private', 'Private') + '</div></a>' +
       '</div>';
 
     var h = '';
