@@ -568,6 +568,7 @@
             '<button type="button" class="x" id="aboutClose" aria-label="close">✕</button></div>' +
           '<div class="ovsub">' + t('appSub') + '</div>' +
           '<div class="ovver">v' + VERSION + ' · deploy ' + deployCode() + '</div>' +
+          (STALE ? '<div class="stalenote">⚠ ' + esc(STALE) + '</div>' : '') +
           '<div class="lang2">' +
             '<button type="button" id="clZh" class="' + (lang === 'zh' ? 'on' : '') + '">中文</button>' +
             '<button type="button" id="clEn" class="' + (lang === 'en' ? 'on' : '') + '">EN</button></div>' +
@@ -754,15 +755,17 @@
      🔴 用行內樣式,不要只靠 class —— 這支的前提就是「舊的 CSS 可能還在」,
         靠 class 會在唯一需要它的時候不亮。
      🔴 讀的是**這一包自己的**戳記,不是去問伺服器現在跑哪一版。 */
+  var STALE = null;   // 手上這包過期時的說明;title 在手機上看不到,所以也要進更新日誌卡片
   function markStale(mine, latest) {
     var el = $('hp-ver');
     if (!el) return;
     el.textContent = '⚠ v' + VERSION;
     el.style.cssText += ';color:#3b1d00;background:#f59e0b;opacity:1;padding:1px 6px;'
       + 'border-radius:5px;text-decoration:none;font-weight:700';
-    el.title = lang === 'en'
+    STALE = lang === 'en'
       ? 'This device loaded ' + mine + '; server has ' + latest + ' — close and reopen to update'
       : '這台載到的是 ' + mine + ',伺服器是 ' + latest + ' —— 關掉重開更新';
+    el.title = STALE;
   }
   function selfUpdate() {
     var mine = buildStamp();
