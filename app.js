@@ -681,10 +681,9 @@
 
   // ---------- 字級 ----------
   /* 家族字級規格:20 段、以 (100 + n×8)% 套在根元素上。
-     Dominic 2026-09-28 定的原點是「往下 3 級、往上 16 級」→ n ∈ [-3, 16]。
-     ⚠ Jetstream 目前是 [-2, 17](同樣 20 段、原點差一格),兩邊哪天要對齊再說。
+     **全家族統一 n ∈ [-2, 17]**(Dominic 2026-09-28 拍板:往下 2、往上 17)。
      🔴 底列自己寫死 font-size:16px,所以放大字級不會把底列內容切掉(hpeak-ui.css 的註解)。 */
-  var FONT_MIN = -3, FONT_MAX = 16;
+  var FONT_MIN = -2, FONT_MAX = 17;
   function fontN() {
     var n = parseInt(lsGet(LS.font), 10);
     return isFinite(n) ? Math.max(FONT_MIN, Math.min(FONT_MAX, n)) : 0;
@@ -919,47 +918,6 @@
     return 'mailto:' + SUPPORT_MAIL +
            '?subject=' + encodeURIComponent(subj) +
            '&body=' + encodeURIComponent(L.join('\n'));
-  }
-
-  function openAbout() {
-    var T = function (zh, en) { return lang === 'en' ? en : zh; };
-    $('aboutTop').innerHTML =
-      '<div class="ovhead"><strong>' + T('更新日誌', 'What’s new') + '</strong>' +
-      '<button id="aboutClose" class="iconbtn" aria-label="' + T('關閉', 'Close') + '">' +
-      '<svg viewBox="0 0 24 24" width="17" height="17"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>' +
-      '</button></div>' +
-      '<div class="ovsub">' + T('北北桃即時車位地圖', 'Live parking map for northern Taiwan') + '</div>' +
-      '<div class="ovver">v' + VERSION + '</div>' +
-      '<div class="lang2">' +
-        '<button id="clZh" class="' + (lang === 'zh' ? 'on' : '') + '">中文</button>' +
-        '<button id="clEn" class="' + (lang === 'en' ? 'on' : '') + '">EN</button>' +
-      '</div>' +
-      /* 社群(公開、可匿名)與私下回報各一半。分兩顆的理由:回報常要附截圖,
-         貼進社群等於公開給群裡每個人看。⚠ 右邊那顆不要叫「寄信」——
-         使用者不寄信(信是伺服器寄的),叫寄信他會以為要跳出信箱而不敢按。 */
-      '<div class="rep2">' +
-        '<a class="comm" href="' + LINE_URL + '" target="_blank" rel="noopener">💬 ' +
-          T('社群討論', 'Community') + '<div class="sub2">' + T('可匿名 Anonymous', 'Anonymous') + '</div></a>' +
-        '<a class="priv" id="clReport" href="' + reportMailto() + '">🔒 ' +
-          T('私下回報', 'Private report') + '<div class="sub2">' + T('不公開 Private', 'Private') + '</div></a>' +
-      '</div>';
-
-    var h = '';
-    CHANGELOG.forEach(function (c) {
-      h += '<div class="cl"><span class="v">v' + c.v + '</span><span class="d">' + c.d + '</span><ul>';
-      c.items.forEach(function (it) { h += '<li>' + esc(lang === 'en' ? it[1] : it[0]) + '</li>'; });
-      h += '</ul></div>';
-    });
-    $('aboutBody').innerHTML = h;
-
-    // Apple 送審要求政策與支援入口要找得到,不能只藏在捲動內容尾端
-    $('aboutFoot').innerHTML =
-      '<span>' + T('資料來源:臺北市、新北市、桃園市政府開放資料平臺',
-                   'Data: Taipei, New Taipei & Taoyuan open data') + '</span>';
-
-    $('clZh').addEventListener('click', function () { applyLang('zh'); openAbout(); });
-    $('clEn').addEventListener('click', function () { applyLang('en'); openAbout(); });
-    $('aboutOv').hidden = false;
   }
 
   // ---------- 定位 ----------
