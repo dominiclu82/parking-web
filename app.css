@@ -20,6 +20,11 @@
   --sign:#0b5cab; --free:#12803c; --tight:#b45309; --full:#a8342b; --unknown:#8a8f96;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+/* 🔴 任何設了 display 的元素都會蓋掉瀏覽器內建的 [hidden]{display:none},
+   於是 hidden=true 等於沒設。.overlay 的 display:flex 就這樣讓那層半透明黑幕
+   從開機起一直蓋在畫面上,吃掉所有點擊(地圖縮放、底列按鈕全部沒反應)。
+   一般化成一條規則,以後新增任何元件都不會再中。 */
+[hidden]{display:none!important}
 html,body{height:100%;margin:0;overscroll-behavior:none}
 body{font-family:var(--sans);color:var(--ink);background:var(--bg-2);-webkit-font-smoothing:antialiased}
 /* 🔴 Safari 的 inset:0 底部在工具列底下,底列會整個看不到。dvh 會跟著工具列伸縮。 */
