@@ -9,7 +9,8 @@
 
   var P = [], META = null, map = null, layer = null, meMarker = null;
   var sel = null, picking = false, sortMode = 'dist';
-  var sheetState = 'peek';   // peek | half | full
+  var sheetState = 'peek';   // peek | half | full | off
+  var beforeDetail = 'peek';  // 開詳情前面板展開到哪,關掉要回去
   var filterAvail = 'free', filterKind = 'all';
   var me = { lat: HOME.lat, lon: HOME.lon, real: false };
   var markers = [];
@@ -216,12 +217,15 @@
     };
   }
   function openSheet(p) {
+    if (sheetState !== 'off') beforeDetail = sheetState;
     setSheet('off');
     sel = p; refreshPins();
     var k = cls(p), d = dist(me.lat, me.lon, p.lat, p.lon), u = navUrls(p), ft = feeTxt(p);
     var av = p.av == null ? '<span class="n">未知</span><div class="t">來源未提供</div>'
            : '<span class="n">' + p.av + '</span><div class="t">' + (p.tot ? '共 ' + p.tot + ' 位' : '空位') + '</div>';
     $('sheetBody').innerHTML =
+      '<button class="sh-close" id="shClose" aria-label="關閉">' +
+      '<svg viewBox="0 0 24 24" width="17" height="17"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg></button>' +
       '<div class="sh-top"><div class="sh-name">' + esc(p.n || '(未命名)') + '</div>' +
       '<div class="sh-av ' + k + '">' + av + '</div></div>' +
       '<div class="chips">' +
@@ -237,8 +241,14 @@
         '<a class="navbtn alt" target="_blank" rel="noopener" href="' + u.google + '">Google 地圖</a>' +
       '</div>';
     $('sheet').hidden = false;
+    var cb = $('shClose');
+    if (cb) cb.addEventListener('click', function (e) { e.stopPropagation(); closeSheet(); });
   }
-  function closeSheet() { sel = null; $('sheet').hidden = true; setSheet('peek'); refreshPins(); }
+  function closeSheet() {
+    sel = null; $('sheet').hidden = true;
+    setSheet(beforeDetail === 'off' ? 'peek' : beforeDetail);   // 回到剛剛看的清單
+    refreshPins();
+  }
 
   // ---------- 清單 ----------
   function renderList() {
@@ -277,9 +287,8 @@
     body.querySelectorAll('.row').forEach(function (el) {
       el.addEventListener('click', function () {
         var p3 = near[parseInt(el.dataset.i, 10)];
-        setSheet('peek');
         map.setView([p3.lat, p3.lon], Math.max(map.getZoom(), 16));
-        openSheet(p3);
+        openSheet(p3);   // 會記住目前展開狀態,關掉詳情就回到這裡
       });
     });
   }

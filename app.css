@@ -37,6 +37,8 @@ body{font-family:var(--sans);color:var(--ink);background:var(--bg-2);
 #map{flex:1;min-height:0;background:var(--bg-2)}
 .leaflet-container{background:var(--bg-2);font-family:var(--sans)}
 .leaflet-control-attribution{font-size:9px;opacity:.75}
+/* 觸控裝置用雙指縮放就好,+/- 只是佔位子還擋到詳情卡 */
+@media (pointer: coarse){ .leaflet-control-zoom{display:none} }
 .leaflet-bottom.leaflet-right{bottom:88px}
 .leaflet-bottom.leaflet-left{bottom:2px}
 
@@ -61,6 +63,10 @@ body{font-family:var(--sans);color:var(--ink);background:var(--bg-2);
 .navrow{flex:0 0 auto}
 .grab{width:38px;height:4px;border-radius:2px;background:var(--line);margin:8px auto 10px}
 .sh-top{display:flex;align-items:flex-start;gap:12px}
+.sh-close{position:absolute;right:10px;top:8px;width:30px;height:30px;display:grid;place-items:center;
+  border:0;background:transparent;color:var(--ink-3);cursor:pointer;border-radius:8px;z-index:2}
+.sh-close:active{background:var(--bg-2)}
+.sheet{position:relative}
 .sh-name{font-size:17px;font-weight:700;line-height:1.3;flex:1;min-width:0;overflow-wrap:anywhere}
 .sh-av{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 .sh-av .n{font-size:25px;font-weight:800;line-height:1}
