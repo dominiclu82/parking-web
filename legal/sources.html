@@ -1,26 +1,37 @@
 <!DOCTYPE html><html lang="zh-Hant"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="color-scheme" content="light dark"><title>資料來源 Sources — 停哪裡</title>
+<meta name="color-scheme" content="light dark"><title>資料來源 — 停哪裡</title>
 <style>
-:root{--bg:#171c22;--fg:#e9eae7;--mut:#8b98a9;--line:#2b333c;--acc:#5da9eb}
-@media (prefers-color-scheme:light){:root{--bg:#fff;--fg:#141a21;--mut:#818b95;--line:#dedcd6;--acc:#0b5cab}}
+:root{--bg:#171c22;--fg:#e9eae7;--mut:#8b98a9;--line:#2b333c;--acc:#5da9eb;--card:#1e242c}
+@media (prefers-color-scheme:light){:root{--bg:#fff;--fg:#141a21;--mut:#818b95;--line:#dedcd6;--acc:#0b5cab;--card:#f6f5f2}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);
  font:16px/1.75 -apple-system,"Noto Sans TC","PingFang TC",system-ui,sans-serif;
- padding:calc(env(safe-area-inset-top,0px) + 28px) 20px calc(env(safe-area-inset-bottom,0px) + 40px)}
+ padding:calc(env(safe-area-inset-top,0px) + 24px) 20px calc(env(safe-area-inset-bottom,0px) + 32px)}
 main{max-width:620px;margin:0 auto}
 h1{font-size:23px;margin:0 0 6px}
-.sub{color:var(--mut);font-size:13px;margin-bottom:26px}
+.sub{color:var(--mut);font-size:13px;margin-bottom:22px}
 h2{font-size:16px;margin:26px 0 8px}
-p,li{font-size:14.5px;color:var(--fg)}
+p,li{font-size:14.5px}
 ul{padding-left:20px}
 table{width:100%;border-collapse:collapse;font-size:13.5px;margin:10px 0}
 th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
 th{color:var(--mut);font-weight:600}
+code{font-size:13px;background:var(--card);padding:1px 5px;border-radius:4px}
 a{color:var(--acc)}
-.back{display:inline-block;margin-top:30px;font-size:14px}
+/* 四頁互連:目前這頁不做成連結,用底色標出來 */
+nav.pages{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 24px}
+nav.pages a,nav.pages span{font-size:13px;font-weight:600;padding:7px 12px;border-radius:9px;
+ border:1px solid var(--line);text-decoration:none;color:var(--mut)}
+nav.pages a:hover{color:var(--fg)}
+nav.pages span.here{background:var(--acc);border-color:var(--acc);color:#fff}
+.foot{margin-top:34px;padding-top:18px;border-top:1px solid var(--line)}
+.back{display:inline-block;font-size:15px;font-weight:700;padding:11px 18px;border-radius:10px;
+ background:var(--acc);color:#fff;text-decoration:none}
 </style></head><body><main>
-<h1>資料來源 Sources</h1><div class="sub">停哪裡 / Taiwan Parking · 最後更新 2026-09-28</div>
+<h1>資料來源 Sources</h1>
+<div class="sub">停哪裡 / Taiwan Parking · 最後更新 2026-09-28</div>
+<nav class="pages"><a href="privacy.html">隱私權政策 Privacy</a><a href="terms.html">使用條款 Terms</a><a href="support.html">支援 Support</a><span class="here">資料來源 Sources</span></nav>
 
 <p>本 App 資料介接自各市政府開放資料平臺,依<strong>政府資料開放授權條款－第 1 版</strong>使用。</p>
 <table>
@@ -37,11 +48,11 @@ a{color:var(--acc)}
 <ul>
 <li>新北市的 TWD97 二度分帶座標換算為 WGS84。</li>
 <li>桃園市原始欄位 <code>wgsX</code>/<code>wgsY</code> 名稱互換,已修正。</li>
-<li>臺北市以 <code>-9</code> 表示「沒有這項資料」,顯示為「未知」而非 0。</li>
+<li>臺北市以 <code>-9</code> 表示「沒有這項資料」,顯示為「未知」而非 0(見<a href="support.html">支援</a>)。</li>
 <li>費率由各市的自由文字欄位解析為每小時金額;分時段不同價者顯示為區間。</li>
-<li>新北市路邊車格依路段彙總。<strong>狀態碼含意尚未經官方文件確認。</strong></li>
+<li>新北市路邊車格依路段彙總。<strong>狀態碼含意尚未經官方文件確認</strong>(見<a href="terms.html">使用條款</a>)。</li>
 </ul>
-<h2>更新頻率</h2>
-<p>本 App 每 10 分鐘向各來源取得一次。某個來源抓不到時會沿用上一次成功的結果,並在「設定」分頁標示。</p>
-<a class="back" href="https://dominiclu82.github.io/parking-web/">← 回到 App</a>
+<h2>更新頻率與可用性</h2>
+<p>本 App 每 10 分鐘向各來源取得一次,合併後發佈於 <code>data.h-peak.com</code>。某個來源抓不到時會沿用上一次成功的結果,並在 App 的「設定」分頁與畫面頂端標示。</p>
+<div class="foot"><a class="back" href="https://parking.h-peak.com/">← 回到 App</a></div>
 </main></body></html>
