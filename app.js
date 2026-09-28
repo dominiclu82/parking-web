@@ -216,7 +216,7 @@
     };
   }
   function openSheet(p) {
-    if (sheetState !== 'peek') setSheet('peek');
+    setSheet('off');
     sel = p; refreshPins();
     var k = cls(p), d = dist(me.lat, me.lon, p.lat, p.lon), u = navUrls(p), ft = feeTxt(p);
     var av = p.av == null ? '<span class="n">未知</span><div class="t">來源未提供</div>'
@@ -230,15 +230,15 @@
         (p.a ? '<span class="chip">' + esc(p.a) + '</span>' : '') +
         (ft ? '<span class="chip ' + (p.fk === 'free' ? 'fee0' : 'fee') + '">' + esc(ft) + '</span>' : '') +
       '</div>' +
-      '<div class="sh-meta">距離 ' + fmtD(d) + ',走路約 ' + walk(d) +
-        (p.r ? '<br>' + esc(p.r) : '') + '</div>' +
+      '<div class="sh-scroll"><div class="sh-meta">距離 ' + fmtD(d) + ',走路約 ' + walk(d) +
+        (p.r ? '<br>' + esc(p.r) : '') + '</div></div>' +
       '<div class="navrow">' +
         '<a class="navbtn" target="_blank" rel="noopener" href="' + u.apple + '">Apple 地圖</a>' +
         '<a class="navbtn alt" target="_blank" rel="noopener" href="' + u.google + '">Google 地圖</a>' +
       '</div>';
     $('sheet').hidden = false;
   }
-  function closeSheet() { sel = null; $('sheet').hidden = true; refreshPins(); }
+  function closeSheet() { sel = null; $('sheet').hidden = true; setSheet('peek'); refreshPins(); }
 
   // ---------- 清單 ----------
   function renderList() {
@@ -292,17 +292,19 @@
     var H = paneH();
     if (state === 'full') return 0;
     if (state === 'half') return Math.round(H * 0.46);
+    if (state === 'off') return H;     // 完全滑出畫面
     return Math.max(0, H - PEEK);      // peek
   }
   function setSheet(state, skipAnim) {
     sheetState = state;
     var pane = $('listPane');
     pane.classList.toggle('peek', state === 'peek');
+    pane.classList.toggle('off', state === 'off');
     if (skipAnim) pane.classList.add('dragging');
     pane.style.transform = 'translateY(' + offsetFor(state) + 'px)';
     if (skipAnim) requestAnimationFrame(function () { pane.classList.remove('dragging'); });
-    $('listBtn').classList.toggle('on', state !== 'peek');
-    if (state !== 'peek') renderList();
+    $('listBtn').classList.toggle('on', state !== 'peek' && state !== 'off');
+    if (state !== 'peek' && state !== 'off') renderList();
   }
   function initSheetDrag() {
     var pane = $('listPane');
@@ -412,8 +414,8 @@
       lb.addEventListener(ev, function () { clearTimeout(holdT); });
     });
     $('listBtn').addEventListener('click', function () {
-      setSheet(sheetState === 'peek' ? 'half' : 'peek');
-      if (sheetState !== 'peek') closeSheet();
+      if (!$('sheet').hidden) { sel = null; $('sheet').hidden = true; refreshPins(); }
+      setSheet(sheetState === 'half' || sheetState === 'full' ? 'peek' : 'half');
     });
     $('listClose').addEventListener('click', function () { setSheet('peek'); });
     initSheetDrag();
