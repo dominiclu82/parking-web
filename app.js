@@ -8,6 +8,7 @@
   var DATA_BASE = 'https://dominiclu82.github.io/parking-data/data/';
   var LINE_URL = 'https://line.me/ti/g2/ArAw4k1D9vXEAMtBsButFLzSFjXzEvFXfKHQ2A';  // 家族共用
   var SUPPORT_MAIL = 'support@h-peak.com';
+  var LEGAL = 'https://dominiclu82.github.io/parking-web/legal/';
   var HOME = { lat: 25.0777, lon: 121.2328, z: 14 };
   var MAX_PINS = 260;
   var LS = { data:'pk.data', meta:'pk.meta', at:'pk.at', me:'pk.me',
@@ -58,7 +59,8 @@
       setData:'資料狀態', setSrc:'各來源', setAbout:'關於', setAttr:'資料來源',
       lastUpd:'本機最後更新', total:'地點總數', withAv:'有即時空位', genAt:'來源產生時間',
       version:'版本', coverage:'涵蓋範圍', notYet:'尚未取得', noData:'沒有資料',
-      cover:'臺北 · 新北 · 桃園', min:' 分'
+      cover:'臺北 · 新北 · 桃園', min:' 分',
+      lPriv:'隱私', lTerms:'條款', lSup:'支援', lSrc:'資料來源'
     },
     en: {
       near:'Nearby', search:'Search', fav:'Saved', set:'Settings',
@@ -85,7 +87,8 @@
       lastUpd:'Last updated on device', total:'Places', withAv:'With live availability',
       genAt:'Generated at', version:'Version', coverage:'Coverage',
       notYet:'Not fetched yet', noData:'No data',
-      cover:'Taipei · New Taipei · Taoyuan', min:' min'
+      cover:'Taipei · New Taipei · Taoyuan', min:' min',
+      lPriv:'', lTerms:'', lSup:'', lSrc:''
     }
   };
   function t(k) { var v = I18N[lang] && I18N[lang][k]; return v == null ? I18N.zh[k] : v; }
@@ -541,7 +544,12 @@
             c.items.map(function (it) { return '<li>' + esc(lang === 'en' ? it[1] : it[0]) + '</li>'; }).join('') +
             '</ul></div>';
         }).join('') + '</div>' +
-        '<div class="ovfoot"><span>' + esc(t('srcNote')) + '</span></div>' +
+        '<div class="ovfoot">' +
+          '<a href="' + LEGAL + 'privacy.html" target="_blank" rel="noopener">Privacy ' + t('lPriv') + '</a>' +
+          '<a href="' + LEGAL + 'terms.html" target="_blank" rel="noopener">Terms ' + t('lTerms') + '</a>' +
+          '<a href="' + LEGAL + 'support.html" target="_blank" rel="noopener">Support ' + t('lSup') + '</a>' +
+          '<a href="' + LEGAL + 'sources.html" target="_blank" rel="noopener">Sources ' + t('lSrc') + '</a>' +
+        '</div>' +
       '</div>';
     $('aboutClose').addEventListener('click', function () { ov.hidden = true; });
     $('clZh').addEventListener('click', function () { applyLang('zh'); openAbout(); });
