@@ -42,7 +42,10 @@ body{font-family:var(--sans);color:var(--ink);background:var(--bg-2);-webkit-fon
 .leaflet-container{background:var(--bg-2);font-family:var(--sans)}
 .leaflet-control-attribution{font-size:9px;opacity:.75}
 @media (pointer:coarse){ .leaflet-control-zoom{display:none} }   /* 手機用雙指縮放就好 */
-.leaflet-bottom.leaflet-right{bottom:78px}
+/* 🔴 Leaflet 的 .leaflet-bottom 預設 z-index:1000,會浮在清單面板(800)上面。
+   壓到 400 讓清單展開時蓋得住它;收起來時仍在 peek 條上方看得到(OSM 授權要求要顯示)。 */
+.leaflet-bottom{z-index:400}
+.leaflet-bottom.leaflet-right{bottom:84px}
 .mapctl{position:absolute;left:0;right:0;top:calc(var(--sat) + 8px);z-index:620;
   display:flex;gap:8px;align-items:center;padding:0 10px;overflow-x:auto;scrollbar-width:none}
 .mapctl::-webkit-scrollbar{display:none}
@@ -204,11 +207,3 @@ body{font-family:var(--sans);color:var(--ink);background:var(--bg-2);-webkit-fon
    ⚠ z-index 要蓋過清單面板(800),否則清單展開時會壓在底列上面。 */
 #app > .hp-tabbar{ position:absolute; bottom:0; z-index:880; }
 
-/* 家族的 .hp-tab-btn 預設 min-width:66px,是為了 PeakLog 那種 6 分頁可左右捲的情境。
-   這個 App 只有 4 個分頁,但功能區有四件(中英/日夜/字級/版號),在 390px 寬的
-   手機上 4×66 + 功能區 ≈ 404px 會把版號擠出畫面 —— 而版號是更新日誌唯一的入口。
-   收窄分頁讓整列塞得下;捲動能力仍然保留(分頁更多時照樣可以捲)。 */
-@media (max-width:430px){
-  #app > .hp-tabbar .hp-tab-btn{ min-width:54px; padding:0 4px; }
-  #app > .hp-tabbar .hp-tab-util{ padding:0 8px 0 4px; gap:6px; }
-}
