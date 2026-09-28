@@ -312,7 +312,7 @@
     if (skipAnim) pane.classList.add('dragging');
     pane.style.transform = 'translateY(' + offsetFor(state) + 'px)';
     if (skipAnim) requestAnimationFrame(function () { pane.classList.remove('dragging'); });
-    $('listBtn').classList.toggle('on', state !== 'peek' && state !== 'off');
+    $('listBtn').classList.toggle('on', state === 'off');
     if (state !== 'peek' && state !== 'off') renderList();
   }
   function initSheetDrag() {
@@ -340,7 +340,7 @@
         setSheet(sheetState === 'half' || sheetState === 'full' ? 'peek' : 'half');
       } else {
         var best = 'peek', bd = Infinity;
-        ['full', 'half', 'peek'].forEach(function (st) {
+        ['full', 'half', 'peek', 'off'].forEach(function (st) {
           var d = Math.abs(offsetFor(st) - curY);
           if (d < bd) { bd = d; best = st; }
         });
@@ -446,7 +446,9 @@
     });
     $('listBtn').addEventListener('click', function () {
       if (!$('sheet').hidden) { sel = null; $('sheet').hidden = true; refreshPins(); }
-      setSheet(sheetState === 'half' || sheetState === 'full' ? 'peek' : 'half');
+      // 看得到就整個收掉,收掉了就半開 —— 一顆鈕就能把清單徹底清空畫面
+      setSheet(sheetState === 'off' ? 'half' : 'off');
+      beforeDetail = 'peek';
     });
     $('listClose').addEventListener('click', function () { setSheet('peek'); });
     initSheetDrag();
