@@ -748,23 +748,43 @@
 
   /* GitHub Pages 的 HTML 帶 max-age=600,手機會載到舊的 index.html(連帶舊的 app.js)。
      開機比對伺服器上的 build 戳記,不一樣就自己重載一次。 */
+  /* 比照 Jetstream:手上這包不是最新版就把版號變琥珀色並說「關掉重開更新」。
+     🔴 只比**部署碼**,不要連版號一起比 —— 形狀不同會變成永遠亮、而且重開也不消失
+        (Jetstream 2026-09-05 同一個坑踩過兩次)。
+     🔴 用行內樣式,不要只靠 class —— 這支的前提就是「舊的 CSS 可能還在」,
+        靠 class 會在唯一需要它的時候不亮。
+     🔴 讀的是**這一包自己的**戳記,不是去問伺服器現在跑哪一版。 */
+  function markStale(mine, latest) {
+    var el = $('hp-ver');
+    if (!el) return;
+    el.textContent = '⚠ v' + VERSION;
+    el.style.cssText += ';color:#3b1d00;background:#f59e0b;opacity:1;padding:1px 6px;'
+      + 'border-radius:5px;text-decoration:none;font-weight:700';
+    el.title = lang === 'en'
+      ? 'This device loaded ' + mine + '; server has ' + latest + ' — close and reopen to update'
+      : '這台載到的是 ' + mine + ',伺服器是 ' + latest + ' —— 關掉重開更新';
+  }
   function selfUpdate() {
-    var sc = document.querySelector('script[src*="app.js"]');
-    var q = sc && /[?&]v=(\d+)/.exec(sc.src);
-    if (!q) return;
-    var mine = q[1];
-    fetch('build.txt?t=' + Date.now(), { cache:'no-store' })
+    var mine = buildStamp();
+    if (!/^\d{14}$/.test(mine)) return;
+    fetch('build.txt?t=' + Date.now(), { cache: 'no-store' })
       .then(function (r) { return r.ok ? r.text() : null; })
       .then(function (txt) {
-        if (!txt) return;
+        if (!txt) return;                        // 離線:就顯示手上這版,不要亂警告
         var latest = txt.trim();
-        if (!/^\d+$/.test(latest) || latest === mine) return;
+        if (!/^\d{14}$/.test(latest) || latest === mine) return;
         var tried = 0;
         try { tried = parseInt(sessionStorage.getItem('pk.reload') || '0', 10) || 0; } catch (e) {}
-        if (tried >= 2) return;
+        if (tried >= 2) {
+          /* 重載兩次還是舊的 —— 多半是 iOS 的 standalone PWA 把舊殼黏住了,
+             重載救不回來。這時候就照家族做法:講出來,讓使用者關掉重開。 */
+          markStale(mine, latest);
+          return;
+        }
         try { sessionStorage.setItem('pk.reload', String(tried + 1)); } catch (e) {}
         location.replace(location.pathname + '?b=' + latest);
-      }).catch(function () {});
+      })
+      .catch(function () { /* 離線:不警告 */ });
   }
 
   function boot() {
