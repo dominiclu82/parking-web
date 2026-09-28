@@ -472,6 +472,14 @@
     var m = sc && /[?&]v=(\d+)/.exec(sc.src);
     return m ? m[1] : '—';
   }
+  /* 比照 Jetstream:版號旁邊顯示這一包自己的部署碼,修 bug 不跳版號,
+     要確認是不是最新版就看這串(Dominic 2026-09-28)。
+     🔴 讀的是自己 script 網址上的戳記,不是去問伺服器 —— 伺服器已經推新版
+        但這台還沒載到時,問伺服器會得到錯的答案。 */
+  function deployCode() {
+    var b = buildStamp();
+    return /^\d{14}$/.test(b) ? b.slice(4, 8) + '-' + b.slice(8, 12) : b;
+  }
   function isStandalone() {
     return (window.navigator.standalone === true) ||
            (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
@@ -507,6 +515,7 @@
     h += '<div class="card2"><h2>' + t('setAbout') + '</h2>' +
       '<div class="kv"><span>' + t('version') + '</span><span>' + VERSION + '</span></div>' +
       '<div class="kv"><span>' + t('coverage') + '</span><span>' + t('cover') + '</span></div>' +
+      '<div class="kv"><span>deploy</span><span>' + esc(deployCode()) + '</span></div>' +
       '<div class="kv"><span>build</span><span>' + esc(buildStamp()) + '</span></div>' +
       '<div class="kv"><span>模式</span><span>' + (isStandalone() ? 'PWA' : 'Safari') + '</span></div>' +
       '<div class="kv"><span>Service Worker</span><span>' +
@@ -558,7 +567,7 @@
             '<strong>' + t('appName') + '</strong>' +
             '<button type="button" class="x" id="aboutClose" aria-label="close">✕</button></div>' +
           '<div class="ovsub">' + t('appSub') + '</div>' +
-          '<div class="ovver">v' + VERSION + '</div>' +
+          '<div class="ovver">v' + VERSION + ' · deploy ' + deployCode() + '</div>' +
           '<div class="lang2">' +
             '<button type="button" id="clZh" class="' + (lang === 'zh' ? 'on' : '') + '">中文</button>' +
             '<button type="button" id="clEn" class="' + (lang === 'en' ? 'on' : '') + '">EN</button></div>' +
