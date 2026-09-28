@@ -706,12 +706,15 @@
   // ---------- 更新日誌 ----------
   var CHANGELOG = [
     { v: '0.2.0', d: '2026-09-28', items: [
-      ['底部主選單:附近、搜尋、常用、設定。', 'Bottom tab bar: Nearby, Search, Saved, Settings.'],
-      ['新增中英切換、字級調整。', 'Added English and text size controls.'],
-      ['清單改成可拖曳,能完全收起。', 'List is now draggable and can be hidden.']
+      ['新增底部主選單。', 'Added a bottom tab bar.'],
+      ['新增中英切換。', 'Added English.'],
+      ['新增字級調整。', 'Added text size controls.'],
+      ['清單可拖曳收合。', 'The list can now be dragged and hidden.'],
+      ['新增常用地點。', 'Added saved places.'],
+      ['新增地點搜尋。', 'Added place search.']
     ] },
     { v: '0.1.0', d: '2026-09-28', items: [
-      ['第一版:台北、新北、桃園即時車位地圖。', 'First release: live parking map for Taipei, New Taipei and Taoyuan.']
+      ['第一版:北北桃即時車位地圖。', 'First release: live parking map for northern Taiwan.']
     ] }
   ];
   var LINE_URL = '';   // ← 社群連結還沒有,拿到再填
