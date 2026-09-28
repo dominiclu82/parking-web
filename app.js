@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '0.2.0';
+  var VERSION = '0.3.0';
   var DATA_BASE = 'https://data.h-peak.com/data/';
   var LINE_URL = 'https://line.me/ti/g2/ArAw4k1D9vXEAMtBsButFLzSFjXzEvFXfKHQ2A';  // 家族共用
   var SUPPORT_MAIL = 'support@h-peak.com';
@@ -517,6 +517,9 @@
 
   /* ────────── 更新日誌 ────────── */
   var CHANGELOG = [
+    { v:'0.3.0', d:'2026-09-28', items:[
+      ['新增隱私權政策與服務條款。', 'Added privacy policy and terms of service.']
+    ]},
     { v:'0.2.0', d:'2026-09-28', items:[
       ['新增地點搜尋。', 'You can now search for places.'],
       ['新增常用地點。', 'You can now save places.'],
