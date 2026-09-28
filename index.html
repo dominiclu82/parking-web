@@ -6,16 +6,18 @@
 <meta name="color-scheme" content="light dark">
 <title>停哪裡</title>
 <link rel="stylesheet" href="vendor/leaflet.css">
-<link rel="stylesheet" href="app.css?v=20260928102616">
+<link rel="stylesheet" href="app.css?v=20260928103404">
 </head>
 <body>
-
 <div id="app">
 
-  <header id="bar">
-    <div class="bar-main">
+  <!-- ══ 附近(地圖) ══ -->
+  <section class="pane on" id="pane-near">
+    <div id="map"></div>
+
+    <div class="mapctl" id="mapctl">
       <button id="locBtn" class="iconbtn" aria-label="回到我的位置">
-        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="3.2" fill="currentColor"/><circle cx="12" cy="12" r="7.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><circle cx="12" cy="12" r="3.2" fill="currentColor"/><circle cx="12" cy="12" r="7.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
       </button>
       <div class="seg" role="group" aria-label="篩選">
         <button class="segb on" data-filter="free">有空位</button>
@@ -26,48 +28,91 @@
         <button class="segb" data-kind="lot">停車場</button>
         <button class="segb" data-kind="street">路邊</button>
       </div>
-      <button id="listBtn" class="iconbtn" aria-label="清單">
-        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
-      </button>
     </div>
+
     <div id="stale" class="stale" hidden></div>
-  </header>
 
-  <div id="map"></div>
-
-  <div id="legend" class="legend">
-    <span><i class="lg free"></i>有位</span>
-    <span><i class="lg tight"></i>快滿</span>
-    <span><i class="lg zero"></i>滿</span>
-    <span><i class="lg unk"></i>未知</span>
-  </div>
-
-  <div id="pickHint" class="pickhint" hidden>點地圖選擇位置</div>
-
-  <div id="sheet" class="sheet" hidden aria-live="polite">
-    <div class="grab"></div>
-    <div id="sheetBody"></div>
-  </div>
-
-  <div id="listPane" class="listpane peek">
-    <div class="sheet-grip" id="grip"><div class="bar"></div></div>
-    <div class="listhead">
-      <strong id="listTitle">附近車位</strong><span class="cnt" id="listCount"></span>
-      <div class="seg small">
-        <button class="segb on" data-sort="dist">最近</button>
-        <button class="segb" data-sort="price">最便宜</button>
-      </div>
-      <button id="listClose" class="iconbtn" aria-label="關閉">
-        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      </button>
+    <div id="legend" class="legend">
+      <span><i class="lg free"></i>有位</span>
+      <span><i class="lg tight"></i>快滿</span>
+      <span><i class="lg zero"></i>滿</span>
+      <span><i class="lg unk"></i>未知</span>
     </div>
-    <div id="listBody" class="listbody"></div>
+
+    <div id="pickHint" class="pickhint" hidden>點地圖選擇位置</div>
+
+    <div id="sheet" class="sheet" hidden aria-live="polite">
+      <div class="grab"></div>
+      <div id="sheetBody"></div>
+    </div>
+
+    <div id="listPane" class="listpane peek">
+      <div class="sheet-grip" id="grip"><div class="bar"></div></div>
+      <div class="listhead">
+        <strong id="listTitle">附近車位</strong><span class="cnt" id="listCount"></span>
+        <div class="seg small">
+          <button class="segb on" data-sort="dist">最近</button>
+          <button class="segb" data-sort="price">最便宜</button>
+        </div>
+      </div>
+      <div id="listBody" class="listbody"></div>
+    </div>
+  </section>
+
+  <!-- ══ 搜尋 ══ -->
+  <section class="pane" id="pane-search">
+    <div class="pagehead"><h1>搜尋</h1></div>
+    <div class="pagebody">
+      <input id="q" class="qinput" type="search" placeholder="停車場名稱、路段或行政區" autocomplete="off" enterkeyhint="search">
+      <div id="qhint" class="qhint">輸入關鍵字,例如「南崁」「文中路」「機場」</div>
+      <div id="qres" class="qres"></div>
+    </div>
+  </section>
+
+  <!-- ══ 常用 ══ -->
+  <section class="pane" id="pane-fav">
+    <div class="pagehead"><h1>常用</h1></div>
+    <div class="pagebody"><div id="favBody"></div></div>
+  </section>
+
+  <!-- ══ 設定 ══ -->
+  <section class="pane" id="pane-set">
+    <div class="pagehead"><h1>設定</h1></div>
+    <div class="pagebody"><div id="setBody"></div></div>
+  </section>
+
+  <!-- ══ 底部主選單(家族規格) ══ -->
+  <nav id="tabbar" class="tabbar" role="tablist">
+    <button class="tab on" data-tab="near"  role="tab"><span class="ti">🅿️</span><span class="tl">附近</span></button>
+    <button class="tab"    data-tab="search" role="tab"><span class="ti">🔍</span><span class="tl">搜尋</span></button>
+    <button class="tab"    data-tab="fav"   role="tab"><span class="ti">⭐</span><span class="tl">常用</span></button>
+    <button class="tab"    data-tab="set"   role="tab"><span class="ti">⚙️</span><span class="tl">設定</span></button>
+    <div class="util">
+      <button id="langBtn" class="upill" aria-label="語言">中</button>
+      <button id="themeBtn" class="upill" aria-label="日夜切換">◐</button>
+      <button id="fontDn" class="upill" aria-label="縮小字級">A−</button>
+      <button id="fontUp" class="upill" aria-label="放大字級">A+</button>
+      <button id="verBtn" class="upill ver" aria-label="版本">—</button>
+    </div>
+  </nav>
+  <button id="tabHandle" class="tabhandle" hidden aria-label="顯示選單"></button>
+
+  <div id="aboutOv" class="overlay" hidden>
+    <div class="ovcard">
+      <div class="ovhead">
+        <strong data-i18n="changelog">更新日誌</strong>
+        <button id="aboutClose" class="iconbtn" aria-label="關閉">
+          <svg viewBox="0 0 24 24" width="17" height="17"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+        </button>
+      </div>
+      <div class="ovbody" id="aboutBody"></div>
+    </div>
   </div>
 
   <div id="toast" class="toast" hidden></div>
 </div>
 
 <script src="vendor/leaflet.js"></script>
-<script src="app.js?v=20260928102616"></script>
+<script src="app.js?v=20260928103404"></script>
 </body>
 </html>

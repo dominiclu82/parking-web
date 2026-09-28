@@ -5,7 +5,10 @@
   var DATA_BASE = 'https://dominiclu82.github.io/parking-data/data/';
   var HOME = { lat: 25.0777, lon: 121.2328, z: 14 };   // 預設:桃園機場
   var MAX_PINS = 260;          // 同時畫在地圖上的上限,超過會卡
-  var LS = { data: 'pk.data', meta: 'pk.meta', at: 'pk.at', me: 'pk.me' };
+  var LS = { data: 'pk.data', meta: 'pk.meta', at: 'pk.at', me: 'pk.me',
+             fav: 'pk.fav', theme: 'pk.theme', tab: 'pk.tab',
+             lang: 'pk.lang', font: 'pk.font' };
+  var VERSION = '0.2.0';
 
   var P = [], META = null, map = null, layer = null, meMarker = null;
   var sel = null, picking = false, sortMode = 'dist';
@@ -36,7 +39,7 @@
     return 2 * R * Math.asin(Math.min(1, Math.sqrt(x)));
   }
   function fmtD(m) { return m < 1000 ? Math.round(m) + ' m' : (m / 1000).toFixed(1) + ' km'; }
-  function walk(m) { return Math.max(1, Math.round(m / 80)) + ' 分'; }
+  function walk(m) { return Math.max(1, Math.round(m / 80)) + t('min'); }
 
   /* av 為 null 代表「來源沒有提供這項資料」,不是 0 —— 絕不可顯示成 0。 */
   function cls(p) {
@@ -143,6 +146,8 @@
     }).addTo(map);
 
     map.on('moveend zoomend', refreshPins);
+    map.on('movestart zoomstart', function () { hideTabbar(); });
+    map.on('moveend zoomend', bumpTabIdle);
     map.on('click', function (e) {
       if (picking) { setMe(e.latlng.lat, e.latlng.lng, false); setPicking(false); }
       else { closeSheet(); }
@@ -221,28 +226,37 @@
     setSheet('off');
     sel = p; refreshPins();
     var k = cls(p), d = dist(me.lat, me.lon, p.lat, p.lon), u = navUrls(p), ft = feeTxt(p);
-    var av = p.av == null ? '<span class="n">未知</span><div class="t">來源未提供</div>'
-           : '<span class="n">' + p.av + '</span><div class="t">' + (p.tot ? '共 ' + p.tot + ' 位' : '空位') + '</div>';
+    var av = p.av == null ? '<span class="n">' + t('unknown') + '</span><div class="t">' + t('unknownSrc') + '</div>'
+           : '<span class="n">' + p.av + '</span><div class="t">' + (p.tot ? t('of') + ' ' + p.tot : t('spaces')) + '</div>';
     $('sheetBody').innerHTML =
       '<button class="sh-close" id="shClose" aria-label="關閉">' +
       '<svg viewBox="0 0 24 24" width="17" height="17"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg></button>' +
       '<div class="sh-top"><div class="sh-name">' + esc(p.n || '(未命名)') + '</div>' +
       '<div class="sh-av ' + k + '">' + av + '</div></div>' +
       '<div class="chips">' +
-        '<span class="chip">' + esc(p.c === '北' ? '台北' : p.c === '新' ? '新北' : '桃園') + '</span>' +
-        (p.k === 'street' ? '<span class="chip">路邊</span>' : '') +
+        '<span class="chip">' + esc(cityName(p.c)) + '</span>' +
+        (p.k === 'street' ? '<span class="chip">' + t('street') + '</span>' : '') +
         (p.a ? '<span class="chip">' + esc(p.a) + '</span>' : '') +
         (ft ? '<span class="chip ' + (p.fk === 'free' ? 'fee0' : 'fee') + '">' + esc(ft) + '</span>' : '') +
       '</div>' +
       '<div class="sh-scroll"><div class="sh-meta">距離 ' + fmtD(d) + ',走路約 ' + walk(d) +
         (p.r ? '<br>' + esc(p.r) : '') + '</div></div>' +
       '<div class="navrow">' +
-        '<a class="navbtn" target="_blank" rel="noopener" href="' + u.apple + '">Apple 地圖</a>' +
-        '<a class="navbtn alt" target="_blank" rel="noopener" href="' + u.google + '">Google 地圖</a>' +
+        '<a class="navbtn" target="_blank" rel="noopener" href="' + u.apple + '">' + t('appleMap') + '</a>' +
+        '<a class="navbtn alt" target="_blank" rel="noopener" href="' + u.google + '">' + t('googleMap') + '</a>' +
+        '<button class="favbtn' + (isFav(p) ? ' on' : '') + '" id="favToggle">' +
+          (isFav(p) ? t('favOn') : t('favAdd')) + '</button>' +
       '</div>';
     $('sheet').hidden = false;
     var cb = $('shClose');
     if (cb) cb.addEventListener('click', function (e) { e.stopPropagation(); closeSheet(); });
+    var fb = $('favToggle');
+    if (fb) fb.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var now = toggleFav(p);
+      fb.classList.toggle('on', now);
+      fb.textContent = now ? t('favOn') : t('favAdd');
+    });
   }
   function closeSheet() {
     sel = null; $('sheet').hidden = true;
@@ -265,10 +279,10 @@
     near = near.slice(0, 80);
 
     var cntEl = $('listCount');
-    if (cntEl) cntEl.textContent = near.length ? '· ' + near.length + ' 個有空位' : '· 附近沒有';
+    if (cntEl) cntEl.textContent = near.length ? t('nHasSpace')(near.length) : t('nNone');
     var body = $('listBody');
     if (!near.length) {
-      body.innerHTML = '<div class="empty">附近 5 公里內沒有符合的地點。<br>試試切到「全部」,或把地圖移到別的地方。</div>';
+      body.innerHTML = '<div class="empty">' + t('noneNear') + '</div>';
       return;
     }
     var h = '';
@@ -312,7 +326,6 @@
     if (skipAnim) pane.classList.add('dragging');
     pane.style.transform = 'translateY(' + offsetFor(state) + 'px)';
     if (skipAnim) requestAnimationFrame(function () { pane.classList.remove('dragging'); });
-    $('listBtn').classList.toggle('on', state === 'off');
     if (state !== 'peek' && state !== 'off') renderList();
   }
   function initSheetDrag() {
@@ -392,16 +405,342 @@
     setSheet('peek', true);
   }
 
+
+  // ---------- 分頁 ----------
+  var curTab = 'near';
+  function switchTab(t) {
+    curTab = t;
+    lsSet(LS.tab, t);
+    ['near', 'search', 'fav', 'set'].forEach(function (k) {
+      var pane = $('pane-' + k);
+      if (pane) pane.classList.toggle('on', k === t);
+    });
+    document.querySelectorAll('.tab').forEach(function (b) {
+      b.classList.toggle('on', b.dataset.tab === t);
+    });
+    showTabbar();                       // 換頁一定要看得到選單
+    if (t === 'near' && map) setTimeout(function () { map.invalidateSize(); }, 60);
+    if (t === 'fav') renderFav();
+    if (t === 'set') renderSettings();
+  }
+
+  // ---------- 底列:操作地圖時縮成把手,閒置 2.5 秒浮回 ----------
+  var tabIdle = null;
+  function showTabbar() {
+    $('tabbar').classList.remove('hidden');
+    $('tabHandle').hidden = true;
+    clearTimeout(tabIdle);
+  }
+  function hideTabbar() {
+    if (curTab !== 'near') return;
+    $('tabbar').classList.add('hidden');
+    $('tabHandle').hidden = false;
+  }
+  function bumpTabIdle() {
+    clearTimeout(tabIdle);
+    tabIdle = setTimeout(showTabbar, 2500);
+  }
+
+  // ---------- 常用 ----------
+  function favKey(p) { return p.c + '|' + p.k + '|' + p.n + '|' + p.lat.toFixed(4); }
+  function favList() {
+    try { return JSON.parse(lsGet(LS.fav) || '[]'); } catch (e) { return []; }
+  }
+  function isFav(p) {
+    var k = favKey(p);
+    return favList().some(function (x) { return x.key === k; });
+  }
+  function toggleFav(p) {
+    var k = favKey(p), arr = favList();
+    var i = arr.findIndex(function (x) { return x.key === k; });
+    if (i >= 0) { arr.splice(i, 1); toast('已移除常用'); }
+    else { arr.push({ key: k, n: p.n, c: p.c, a: p.a, lat: p.lat, lon: p.lon, k2: p.k }); toast('已加入常用'); }
+    lsSet(LS.fav, JSON.stringify(arr));
+    return i < 0;
+  }
+  function findByKey(k) {
+    for (var i = 0; i < P.length; i++) if (favKey(P[i]) === k) return P[i];
+    return null;
+  }
+  function renderFav() {
+    var arr = favList(), el = $('favBody');
+    if (!arr.length) {
+      el.innerHTML = '<div class="empty">' + t('favEmpty') + '</div>';
+      return;
+    }
+    var h = '<div class="favlist">';
+    arr.forEach(function (f, i) {
+      var live = findByKey(f.key);
+      var av = live ? (live.av == null ? '未知' : live.av) : '—';
+      var k = live ? cls(live) : 'unk';
+      var d = dist(me.lat, me.lon, f.lat, f.lon);
+      h += '<div class="row" data-k="' + esc(f.key) + '">' +
+           '<div class="rmain"><div class="rn">' + esc(f.n || '') + '</div>' +
+           '<div class="rm"><span>' + esc(cityName(f.c)) + '</span>' +
+           (f.a ? '<span>' + esc(f.a) + '</span>' : '') + '<span>' + fmtD(d) + '</span></div></div>' +
+           '<div class="rav ' + k + '"><b>' + av + '</b><div class="rd">' + t('spaces') + '</div></div>' +
+           '<button class="favbtn" data-del="' + i + '" style="margin-left:10px">' + t('remove') + '</button></div>';
+    });
+    el.innerHTML = h + '</div>';
+    el.querySelectorAll('[data-del]').forEach(function (b) {
+      b.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var a2 = favList(); a2.splice(parseInt(b.dataset.del, 10), 1);
+        lsSet(LS.fav, JSON.stringify(a2)); renderFav();
+      });
+    });
+    el.querySelectorAll('.row').forEach(function (r) {
+      r.addEventListener('click', function () {
+        var p = findByKey(r.dataset.k);
+        if (!p) { toast('這個地點目前沒有在資料裡'); return; }
+        switchTab('near');
+        map.setView([p.lat, p.lon], 16);
+        openSheet(p);
+      });
+    });
+  }
+
+  // ---------- 搜尋 ----------
+  function runSearch() {
+    var q = ($('q').value || '').trim();
+    var box = $('qres');
+    if (!q) { box.innerHTML = ''; $('qhint').textContent = '輸入關鍵字,例如「南崁」「文中路」「機場」'; return; }
+    var hit = [];
+    for (var i = 0; i < P.length && hit.length < 200; i++) {
+      var p = P[i];
+      if ((p.n && p.n.indexOf(q) >= 0) || (p.a && p.a.indexOf(q) >= 0)) {
+        p._d = dist(me.lat, me.lon, p.lat, p.lon);
+        hit.push(p);
+      }
+    }
+    hit.sort(function (a, b) { return a._d - b._d; });
+    hit = hit.slice(0, 60);
+    $('qhint').textContent = hit.length ? t('qfound')(hit.length) : t('qnone');
+    var h = '';
+    hit.forEach(function (p, j) {
+      var k = cls(p), ft = feeShort(p);
+      h += '<div class="row" data-j="' + j + '">' +
+           '<div class="rmain"><div class="rn">' + esc(p.n || '') + '</div>' +
+           '<div class="rm">' + (ft ? '<span>' + esc(ft) + '</span>' : '') +
+           (p.a ? '<span>' + esc(p.a) + '</span>' : '') + '<span>' + fmtD(p._d) + '</span></div></div>' +
+           '<div class="rav ' + k + '"><b>' + (p.av == null ? '未知' : p.av) + '</b>' +
+           (p.tot ? '<span class="rd"> / ' + p.tot + '</span>' : '') + '</div></div>';
+    });
+    box.innerHTML = h;
+    box.querySelectorAll('.row').forEach(function (r) {
+      r.addEventListener('click', function () {
+        var p = hit[parseInt(r.dataset.j, 10)];
+        switchTab('near');
+        map.setView([p.lat, p.lon], 16);
+        openSheet(p);
+      });
+    });
+  }
+
+  // ---------- 設定 ----------
+  var SRCNAME = { taipei: '臺北市停車場', ntpc_lot: '新北市停車場', ntpc_street: '新北市路邊', taoyuan: '桃園市停車場' };
+  function renderSettings() {
+    var at = parseInt(lsGet(LS.at) || '0', 10);
+    var h = '<div class="card2"><h2>資料狀態</h2>';
+    h += '<div class="kv"><span>本機最後更新</span><span>' +
+         (at ? new Date(at).toLocaleString('zh-TW', { hour12: false }) : '尚未取得') + '</span></div>';
+    h += '<div class="kv"><span>地點總數</span><span>' + P.length.toLocaleString() + '</span></div>';
+    h += '<div class="kv"><span>有即時空位</span><span>' +
+         P.filter(function (p) { return p.av != null; }).length.toLocaleString() + '</span></div>';
+    if (META && META.generated) h += '<div class="kv"><span>來源產生時間</span><span>' + esc(META.generated.replace('T', ' ').slice(0, 16)) + '</span></div>';
+    h += '</div>';
+
+    if (META && META.sources) {
+      h += '<div class="card2"><h2>各來源</h2>';
+      Object.keys(META.sources).forEach(function (k) {
+        var sc = META.sources[k];
+        h += '<div class="kv"><span><i class="okdot ' + (sc.ok ? 'y' : 'n') + '"></i>' +
+             esc(SRCNAME[k] || k) + '</span><span>' +
+             (sc.ok ? (sc.count || 0) + ' 筆' : (sc.stale ? sc.ageMin + ' 分鐘前的快取' : '沒有資料')) +
+             '</span></div>';
+      });
+      h += '<p>資料每 10 分鐘更新一次。某個來源抓不到時會沿用上一次成功的結果,並在這裡標示。</p></div>';
+    }
+
+    h += '<div class="card2"><h2>資料來源</h2><p>' +
+         '臺北市、新北市、桃園市政府開放資料平臺,依<b>政府資料開放授權條款－第 1 版</b>使用。<br>' +
+         '地圖圖磚 © OpenStreetMap 貢獻者。<br><br>' +
+         '⚠︎ 空位顯示「未知」代表來源沒有提供該筆資料,不是沒有空位。<br>' +
+         '⚠︎ 新北市路邊車格的狀態碼含意尚未經官方文件確認,路邊的數字請當作參考。<br>' +
+         '⚠︎ 所有資訊可能因更新延遲與現場不同,請以現場標示為準。</p></div>';
+
+    h += '<div class="card2"><h2>關於</h2>' +
+         '<div class="kv"><span>版本</span><span>' + VERSION + '</span></div>' +
+         '<div class="kv"><span>涵蓋範圍</span><span>臺北 · 新北 · 桃園</span></div></div>';
+    $('setBody').innerHTML = h;
+  }
+
+  // ---------- 日夜 ----------
+  function applyTheme(t) {
+    if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+    else document.documentElement.removeAttribute('data-theme');
+    lsSet(LS.theme, t);
+    var b = $('themeBtn');
+    if (b) b.textContent = t === 'dark' ? '☾' : t === 'light' ? '☀︎' : '◐';
+  }
+  function cycleTheme() {
+    var cur = lsGet(LS.theme) || 'auto';
+    applyTheme(cur === 'auto' ? 'light' : cur === 'light' ? 'dark' : 'auto');
+    if (map) setTimeout(function () { refreshPins(); }, 30);
+  }
+
+
+  // ---------- 中英 ----------
+  var I18N = {
+    zh: {
+      near: '附近', search: '搜尋', fav: '常用', set: '設定',
+      hasSpace: '有空位', all: '全部', lots: '停車場', street: '路邊',
+      nearby: '附近車位', sortDist: '最近', sortPrice: '最便宜',
+      legFree: '有位', legTight: '快滿', legFull: '滿', legUnk: '未知',
+      qph: '停車場名稱、路段或行政區',
+      qhint: '輸入關鍵字,例如「南崁」「文中路」「機場」',
+      qfound: function (n) { return '找到 ' + n + ' 個(依距離排序)'; },
+      qnone: '找不到符合的地點',
+      favEmpty: '還沒有常用地點。<br>在地圖上點任一個車位,詳情卡右下角按「☆ 常用」就會加進來。',
+      favAdd: '☆ 常用', favOn: '★ 常用', remove: '移除',
+      appleMap: 'Apple 地圖', googleMap: 'Google 地圖',
+      spaces: '空位', of: '共', unknown: '未知', unknownSrc: '來源未提供',
+      distTo: function (d, w) { return '距離 ' + d + ',走路約 ' + w; },
+      pickHint: '點地圖選擇位置', located: '已定位',
+      locFail: '拿不到定位。長按「定位」鈕可以改成在地圖上手動指定。',
+      pickTip: '點地圖上任一點設定你的位置',
+      noneNear: '附近 5 公里內沒有符合的地點。<br>試試切到「全部」,或把地圖移到別的地方。',
+      nHasSpace: function (n) { return '· ' + n + ' 個有空位'; }, nNone: '· 附近沒有',
+      changelog: '更新日誌', community: '💬 社群討論(可匿名)', report: '🔒 私下回報',
+      reportSoon: '私下回報(尚未開放)',
+      taipei: '台北', ntpc: '新北', tyc: '桃園',
+      setData: '資料狀態', setSrc: '各來源', setAbout: '關於', setSources: '資料來源',
+      lastUpd: '本機最後更新', total: '地點總數', withAv: '有即時空位',
+      genAt: '來源產生時間', version: '版本', coverage: '涵蓋範圍',
+      notYet: '尚未取得', rows: ' 筆', cacheAgo: function (m) { return m + ' 分鐘前的快取'; },
+      noData: '沒有資料', min: '分', km: 'km', m: 'm'
+    },
+    en: {
+      near: 'Nearby', search: 'Search', fav: 'Saved', set: 'Settings',
+      hasSpace: 'Available', all: 'All', lots: 'Car parks', street: 'On-street',
+      nearby: 'Nearby parking', sortDist: 'Closest', sortPrice: 'Cheapest',
+      legFree: 'Free', legTight: 'Filling', legFull: 'Full', legUnk: 'Unknown',
+      qph: 'Car park name, street or district',
+      qhint: 'Try a place name, e.g. "Nankan", "Airport"',
+      qfound: function (n) { return n + ' found (by distance)'; },
+      qnone: 'No matching places',
+      favEmpty: 'No saved places yet.<br>Tap any parking spot on the map, then tap "☆ Save" in the detail card.',
+      favAdd: '☆ Save', favOn: '★ Saved', remove: 'Remove',
+      appleMap: 'Apple Maps', googleMap: 'Google Maps',
+      spaces: 'free', of: 'of', unknown: 'Unknown', unknownSrc: 'not provided',
+      distTo: function (d, w) { return d + ' away, about ' + w + ' on foot'; },
+      pickHint: 'Tap the map to set your location', located: 'Location set',
+      locFail: 'Could not get your location. Press and hold the locate button to pick a spot on the map.',
+      pickTip: 'Tap anywhere on the map to set your location',
+      noneNear: 'Nothing matching within 5 km.<br>Try "All", or move the map elsewhere.',
+      nHasSpace: function (n) { return '· ' + n + ' with space'; }, nNone: '· none nearby',
+      changelog: 'What’s new', community: '💬 Community (anonymous)', report: '🔒 Private report',
+      reportSoon: 'Private report (not yet available)',
+      taipei: 'Taipei', ntpc: 'New Taipei', tyc: 'Taoyuan',
+      setData: 'Data status', setSrc: 'Sources', setAbout: 'About', setSources: 'Attribution',
+      lastUpd: 'Last updated on device', total: 'Places', withAv: 'With live availability',
+      genAt: 'Generated at', version: 'Version', coverage: 'Coverage',
+      notYet: 'Not yet fetched', rows: '', cacheAgo: function (m) { return 'cached ' + m + ' min ago'; },
+      noData: 'No data', min: ' min', km: 'km', m: 'm'
+    }
+  };
+  var lang = 'zh';
+  function t(k) { return (I18N[lang] && I18N[lang][k]) != null ? I18N[lang][k] : I18N.zh[k]; }
+  function cityName(c) { return c === '北' ? t('taipei') : c === '新' ? t('ntpc') : t('tyc'); }
+
+  function applyLang(l) {
+    lang = (l === 'en') ? 'en' : 'zh';
+    lsSet(LS.lang, lang);
+    document.documentElement.lang = lang === 'en' ? 'en' : 'zh-Hant';
+    var B = $('langBtn'); if (B) B.textContent = lang === 'en' ? 'EN' : '中';
+    // 底列
+    document.querySelectorAll('.tab').forEach(function (b) {
+      var l2 = b.querySelector('.tl'); if (l2) l2.textContent = t(b.dataset.tab);
+    });
+    // 標題
+    var map2 = { 'pane-search': 'search', 'pane-fav': 'fav', 'pane-set': 'set' };
+    Object.keys(map2).forEach(function (id) {
+      var h = document.querySelector('#' + id + ' h1'); if (h) h.textContent = t(map2[id]);
+    });
+    // 篩選 / 排序
+    var F = { free: 'hasSpace', all: 'all' }, K = { all: 'all', lot: 'lots', street: 'street' },
+        S = { dist: 'sortDist', price: 'sortPrice' };
+    document.querySelectorAll('[data-filter]').forEach(function (b) { b.textContent = t(F[b.dataset.filter]); });
+    document.querySelectorAll('[data-kind]').forEach(function (b) { b.textContent = t(K[b.dataset.kind]); });
+    document.querySelectorAll('[data-sort]').forEach(function (b) { b.textContent = t(S[b.dataset.sort]); });
+    // 圖例
+    var lg = $('legend');
+    if (lg) {
+      var names = ['legFree', 'legTight', 'legFull', 'legUnk'];
+      lg.querySelectorAll('span').forEach(function (sp, i) {
+        var ic = sp.querySelector('i'); sp.innerHTML = ''; if (ic) sp.appendChild(ic);
+        sp.appendChild(document.createTextNode(t(names[i])));
+      });
+    }
+    $('listTitle').textContent = t('nearby');
+    $('pickHint').textContent = t('pickHint');
+    var qi = $('q'); if (qi) qi.placeholder = t('qph');
+    var qh = $('qhint'); if (qh && !(qi && qi.value.trim())) qh.textContent = t('qhint');
+    document.querySelectorAll('[data-i18n]').forEach(function (e) { e.textContent = t(e.dataset.i18n); });
+    renderList(); if (curTab === 'fav') renderFav();
+    if (curTab === 'set') renderSettings(); if (curTab === 'search') runSearch();
+    if (sel) openSheet(sel);
+    renderStale(false);
+  }
+
+  // ---------- 字級 ----------
+  var FS = [15, 16, 17, 19, 21];
+  function applyFont(i) {
+    i = Math.max(0, Math.min(FS.length - 1, i));
+    lsSet(LS.font, String(i));
+    document.documentElement.style.fontSize = FS[i] + 'px';
+    if (map) setTimeout(function () { map.invalidateSize(); }, 60);
+  }
+  function fontIdx() { return parseInt(lsGet(LS.font) || '1', 10) || 1; }
+
+  // ---------- 更新日誌 ----------
+  var CHANGELOG = [
+    { v: '0.2.0', d: '2026-09-28', items: [
+      ['底部主選單:附近、搜尋、常用、設定。', 'Bottom tab bar: Nearby, Search, Saved, Settings.'],
+      ['新增中英切換、字級調整。', 'Added English and text size controls.'],
+      ['清單改成可拖曳,能完全收起。', 'List is now draggable and can be hidden.']
+    ] },
+    { v: '0.1.0', d: '2026-09-28', items: [
+      ['第一版:台北、新北、桃園即時車位地圖。', 'First release: live parking map for Taipei, New Taipei and Taoyuan.']
+    ] }
+  ];
+  var LINE_URL = '';   // ← 社群連結還沒有,拿到再填
+  function openAbout() {
+    var h = '<div class="rep2">' +
+      (LINE_URL ? '<a class="pri" target="_blank" rel="noopener" href="' + LINE_URL + '">' + t('community') + '</a>'
+                : '<button class="off">' + t('community') + '</button>') +
+      '<button class="off">' + t('reportSoon') + '</button></div>';
+    CHANGELOG.forEach(function (c) {
+      h += '<div class="cl"><span class="v">v' + c.v + '</span><span class="d">' + c.d + '</span><ul>';
+      c.items.forEach(function (it) {
+        h += '<li>' + esc(lang === 'en' ? it[1] : it[0]) + '</li>';
+      });
+      h += '</ul></div>';
+    });
+    $('aboutBody').innerHTML = h;
+    $('aboutOv').hidden = false;
+  }
+
   // ---------- 定位 ----------
   function locate() {
     var Geo = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Geolocation) || null;
     var done = function (lat, lon) {
       setMe(lat, lon, true);
       map.setView([lat, lon], Math.max(map.getZoom(), 15));
-      toast('已定位');
+      toast(t('located'));
     };
     var fail = function () {
-      toast('拿不到定位。長按「定位」鈕可以改成在地圖上手動指定。', 3600);
+      toast(t('locFail'), 3600);
     };
     if (Geo && Geo.getCurrentPosition) {
       Geo.requestPermissions().catch(function () { return null; }).then(function () {
@@ -439,19 +778,30 @@
     var lb = $('locBtn'), holdT = null;
     lb.addEventListener('click', function () { if (!picking) locate(); else setPicking(false); });
     lb.addEventListener('pointerdown', function () {
-      holdT = setTimeout(function () { setPicking(true); toast('點地圖上任一點設定你的位置'); }, 550);
+      holdT = setTimeout(function () { setPicking(true); toast(t('pickTip')); }, 550);
     });
     ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) {
       lb.addEventListener(ev, function () { clearTimeout(holdT); });
     });
-    $('listBtn').addEventListener('click', function () {
-      if (!$('sheet').hidden) { sel = null; $('sheet').hidden = true; refreshPins(); }
-      // 看得到就整個收掉,收掉了就半開 —— 一顆鈕就能把清單徹底清空畫面
-      setSheet(sheetState === 'off' ? 'half' : 'off');
-      beforeDetail = 'peek';
-    });
-    $('listClose').addEventListener('click', function () { setSheet('peek'); });
     initSheetDrag();
+    document.querySelectorAll('.tab').forEach(function (b) {
+      b.addEventListener('click', function () { switchTab(b.dataset.tab); });
+    });
+    $('tabHandle').addEventListener('click', showTabbar);
+    $('themeBtn').addEventListener('click', cycleTheme);
+    $('langBtn').addEventListener('click', function () { applyLang(lang === 'zh' ? 'en' : 'zh'); });
+    $('fontUp').addEventListener('click', function () { applyFont(fontIdx() + 1); });
+    $('fontDn').addEventListener('click', function () { applyFont(fontIdx() - 1); });
+    $('aboutClose').addEventListener('click', function () { $('aboutOv').hidden = true; });
+    $('aboutOv').addEventListener('click', function (e) { if (e.target === $('aboutOv')) $('aboutOv').hidden = true; });
+    $('verBtn').textContent = 'v' + VERSION;
+    $('verBtn').addEventListener('click', openAbout);
+    var qi = $('q');
+    if (qi) {
+      var qt = null;
+      qi.addEventListener('input', function () { clearTimeout(qt); qt = setTimeout(runSearch, 160); });
+      qi.addEventListener('search', runSearch);
+    }
     document.addEventListener('visibilitychange', function () {
       if (!document.hidden) fetchFresh().catch(function () {});
     });
@@ -459,7 +809,11 @@
 
   // ---------- 啟動 ----------
   function boot() {
+    applyTheme(lsGet(LS.theme) || 'auto');
+    applyFont(fontIdx());
     initMap(); bind();
+    switchTab('near');
+    applyLang(lsGet(LS.lang) || (/^zh/i.test(navigator.language || '') ? 'zh' : 'en'));
     var hadCache = loadCache();
     if (hadCache) toast('先顯示存下的資料,更新中…', 1800);
     fetchFresh().catch(function () {
