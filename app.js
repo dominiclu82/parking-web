@@ -680,15 +680,22 @@
   }
 
   // ---------- 字級 ----------
-  var FS = [15, 16, 17, 19, 21];
-  function applyFont(i) {
-    i = Math.max(0, Math.min(FS.length - 1, i));
-    lsSet(LS.font, String(i));
-    document.documentElement.style.fontSize = FS[i] + 'px';
-    if (map) setTimeout(function () { map.invalidateSize(); }, 60);
+  /* 家族字級規格:20 段、以 (100 + n×8)% 套在根元素上。
+     Dominic 2026-09-28 定的原點是「往下 3 級、往上 16 級」→ n ∈ [-3, 16]。
+     ⚠ Jetstream 目前是 [-2, 17](同樣 20 段、原點差一格),兩邊哪天要對齊再說。
+     🔴 底列自己寫死 font-size:16px,所以放大字級不會把底列內容切掉(hpeak-ui.css 的註解)。 */
+  var FONT_MIN = -3, FONT_MAX = 16;
+  function fontN() {
+    var n = parseInt(lsGet(LS.font), 10);
+    return isFinite(n) ? Math.max(FONT_MIN, Math.min(FONT_MAX, n)) : 0;
   }
-  function fontIdx() { return parseInt(lsGet(LS.font) || '1', 10) || 1; }
-  function adjustFont(d) { applyFont(fontIdx() + d); }
+  function applyFontN(n) {
+    n = Math.max(FONT_MIN, Math.min(FONT_MAX, n));
+    lsSet(LS.font, String(n));
+    document.documentElement.style.fontSize = (100 + n * 8) + '%';
+    if (map) setTimeout(function () { map.invalidateSize(); refreshPins(); }, 60);
+  }
+  function adjustFont(d) { applyFontN(fontN() + d); }
 
   // ---------- 更新日誌 ----------
   var CHANGELOG = [
@@ -736,43 +743,50 @@
 
   function openAbout() {
     var T = function (zh, en) { return lang === 'en' ? en : zh; };
-    $('aboutTop').innerHTML =
-      '<div class="ovhead"><strong>' + T('更新日誌', 'What’s new') + '</strong>' +
-      '<button id="aboutClose" class="iconbtn" aria-label="' + T('關閉', 'Close') + '">' +
-      '<svg viewBox="0 0 24 24" width="17" height="17"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>' +
-      '</button></div>' +
-      '<div class="ovsub">' + T('北北桃即時車位地圖', 'Live parking map for northern Taiwan') + '</div>' +
-      '<div class="ovver">v' + VERSION + '</div>' +
-      '<div class="lang2">' +
-        '<button id="clZh" class="' + (lang === 'zh' ? 'on' : '') + '">中文</button>' +
-        '<button id="clEn" class="' + (lang === 'en' ? 'on' : '') + '">EN</button>' +
-      '</div>' +
-      /* 社群(公開、可匿名)與私下回報各一半。分兩顆的理由:回報常要附截圖,
-         貼進社群等於公開給群裡每個人看。⚠ 右邊那顆不要叫「寄信」——
-         使用者不寄信(信是伺服器寄的),叫寄信他會以為要跳出信箱而不敢按。 */
-      '<div class="rep2">' +
-        '<a class="comm" href="' + LINE_URL + '" target="_blank" rel="noopener">💬 ' +
-          T('社群討論', 'Community') + '<div class="sub2">' + T('可匿名 Anonymous', 'Anonymous') + '</div></a>' +
-        '<a class="priv" id="clReport" href="' + reportMailto() + '">🔒 ' +
-          T('私下回報', 'Private report') + '<div class="sub2">' + T('不公開 Private', 'Private') + '</div></a>' +
+    var ov = $('aboutOv');
+    ov.innerHTML =
+      '<div class="ovcard">' +
+        '<div class="ovtop">' +
+          '<div class="ovhead">' +
+            '<img src="icons/icon-192.png" alt="">' +
+            '<strong>' + T('停哪裡', 'Taiwan Parking') + '</strong>' +
+            '<button type="button" class="x" id="aboutClose" aria-label="' + T('關閉', 'Close') + '">✕</button>' +
+          '</div>' +
+          '<div class="ovsub">' + T('北北桃即時車位地圖,不用登入、不用付費',
+                                    'Live parking for northern Taiwan. No login, no purchase.') + '</div>' +
+          '<div class="ovver">v' + VERSION + '</div>' +
+          '<div class="lang2">' +
+            '<button type="button" id="clZh" class="' + (lang === 'zh' ? 'on' : '') + '">中文</button>' +
+            '<button type="button" id="clEn" class="' + (lang === 'en' ? 'on' : '') + '">EN</button>' +
+          '</div>' +
+          /* 社群(公開、可匿名)與私下回報各一半。⚠ 這兩顆的文字要跟家族一字不差,
+             唯一的差別是這個 App 沒有後端,右邊那顆走 mailto。 */
+          '<div class="rep2">' +
+            '<a class="comm" href="' + LINE_URL + '" target="_blank" rel="noopener">💬 ' +
+              T('社群討論', 'Community') +
+              '<div class="sub2">' + T('可匿名 Anonymous', 'Anonymous') + '</div></a>' +
+            '<a class="priv" id="clReport" href="' + reportMailto() + '">🔒 ' +
+              T('私下回報', 'Private report') +
+              '<div class="sub2">' + T('不公開 Private', 'Private') + '</div></a>' +
+          '</div>' +
+        '</div>' +
+        '<div class="ovbody">' +
+          CHANGELOG.map(function (c) {
+            return '<div class="cl"><span class="v">v' + c.v + '</span><span class="d">' + c.d + '</span><ul>' +
+              c.items.map(function (it) { return '<li>' + esc(lang === 'en' ? it[1] : it[0]) + '</li>'; }).join('') +
+              '</ul></div>';
+          }).join('') +
+        '</div>' +
+        '<div class="ovfoot">' +
+          '<span>' + T('資料來源:臺北市、新北市、桃園市政府開放資料平臺',
+                       'Data: Taipei, New Taipei & Taoyuan open data') + '</span>' +
+        '</div>' +
       '</div>';
-
-    var h = '';
-    CHANGELOG.forEach(function (c) {
-      h += '<div class="cl"><span class="v">v' + c.v + '</span><span class="d">' + c.d + '</span><ul>';
-      c.items.forEach(function (it) { h += '<li>' + esc(lang === 'en' ? it[1] : it[0]) + '</li>'; });
-      h += '</ul></div>';
-    });
-    $('aboutBody').innerHTML = h;
-
-    // Apple 送審要求政策與支援入口要找得到,不能只藏在捲動內容尾端
-    $('aboutFoot').innerHTML =
-      '<span>' + T('資料來源:臺北市、新北市、桃園市政府開放資料平臺',
-                   'Data: Taipei, New Taipei & Taoyuan open data') + '</span>';
-
+    $('aboutClose').addEventListener('click', function () { ov.hidden = true; });
     $('clZh').addEventListener('click', function () { applyLang('zh'); openAbout(); });
     $('clEn').addEventListener('click', function () { applyLang('en'); openAbout(); });
-    $('aboutOv').hidden = false;
+    ov.addEventListener('click', function (e) { if (e.target === ov) ov.hidden = true; });
+    ov.hidden = false;
   }
 
   // ---------- 定位 ----------
@@ -861,13 +875,6 @@
 
   // ---------- 字級 ----------
   var FS = [15, 16, 17, 19, 21];
-  function applyFont(i) {
-    i = Math.max(0, Math.min(FS.length - 1, i));
-    lsSet(LS.font, String(i));
-    document.documentElement.style.fontSize = FS[i] + 'px';
-    if (map) setTimeout(function () { map.invalidateSize(); }, 60);
-  }
-  function fontIdx() { return parseInt(lsGet(LS.font) || '1', 10) || 1; }
   function adjustFont(d) { applyFont(fontIdx() + d); }
 
   // ---------- 更新日誌 ----------
@@ -1053,7 +1060,7 @@
 
   function boot() {
     applyTheme(lsGet(LS.theme) || 'dark');
-    applyFont(fontIdx());
+    applyFontN(fontN());
     initMap(); bind();
     switchTab('near');
     applyLang(lsGet(LS.lang) || (/^zh/i.test(navigator.language || '') ? 'zh' : 'en'));
