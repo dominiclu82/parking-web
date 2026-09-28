@@ -310,23 +310,25 @@
     var pane = $('listPane');
     var startOff = null, startY = 0, moved = 0, curY = 0;
 
-    function onMove(e) {
+    function begin(y, target) {
+      if (target && target.closest && target.closest('button')) return false;
+      startOff = offsetFor(sheetState); curY = startOff; startY = y; moved = 0;
+      pane.classList.add('dragging');
+      return true;
+    }
+    function move(y) {
       if (startOff == null) return;
-      e.preventDefault();
-      var dy = e.clientY - startY;
+      var dy = y - startY;
       moved = Math.max(moved, Math.abs(dy));
       var H = paneH();
       curY = Math.min(Math.max(0, startOff + dy), Math.max(0, H - PEEK));
       pane.style.transform = 'translateY(' + curY + 'px)';
     }
-    function onEnd() {
+    function end() {
       if (startOff == null) return;
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onEnd);
-      window.removeEventListener('pointercancel', onEnd);
       pane.classList.remove('dragging');
       if (moved < 8) {
-        setSheet(sheetState === 'peek' ? 'half' : 'peek');
+        setSheet(sheetState === 'half' || sheetState === 'full' ? 'peek' : 'half');
       } else {
         var best = 'peek', bd = Infinity;
         ['full', 'half', 'peek'].forEach(function (st) {
@@ -337,26 +339,46 @@
       }
       startOff = null;
     }
-    function onStart(e) {
-      // 標題列上的按鈕(排序、關閉)不該觸發拖曳
-      if (e.target.closest && e.target.closest('button')) return;
-      startOff = offsetFor(sheetState);
-      curY = startOff;
-      startY = e.clientY;
-      moved = 0;
-      pane.classList.add('dragging');
-      // 🔴 監聽器要掛在 window:掛在子元素上、又對父層 setPointerCapture,
-      //    事件會被導去父層,子元素永遠收不到 move/up(手機上就是完全拖不動)。
-      window.addEventListener('pointermove', onMove, { passive: false });
-      window.addEventListener('pointerup', onEnd);
-      window.addEventListener('pointercancel', onEnd);
-      e.preventDefault();
-    }
 
+    /* 🔴 用 touch 事件,不用 pointer 事件。
+       iOS Safari 會在它判定這是頁面手勢時直接送 pointercancel,
+       而且在 pointerdown 裡呼叫 preventDefault 反而會讓後續 pointermove 不發生。
+       touchstart/touchmove/touchend 在 iOS 上最穩,桌機另外走 mouse 事件。 */
+    function onTouchStart(e) {
+      if (e.touches.length !== 1) return;
+      if (!begin(e.touches[0].clientY, e.target)) return;
+      e.preventDefault();          // 在 touchstart 擋,才不會被當成捲動
+    }
+    function onTouchMove(e) {
+      if (startOff == null) return;
+      e.preventDefault();
+      move(e.touches[0].clientY);
+    }
+    var handles = [];
     ['#grip', '.listhead'].forEach(function (q) {
       var el = pane.querySelector(q);
-      if (el) el.addEventListener('pointerdown', onStart, { passive: false });
+      if (el) handles.push(el);
     });
+    handles.forEach(function (el) {
+      el.addEventListener('touchstart', onTouchStart, { passive: false });
+      el.addEventListener('touchmove', onTouchMove, { passive: false });
+      el.addEventListener('touchend', end);
+      el.addEventListener('touchcancel', end);
+      // 桌機
+      el.addEventListener('mousedown', function (e) {
+        if (!begin(e.clientY, e.target)) return;
+        e.preventDefault();
+        function mm(ev) { move(ev.clientY); }
+        function mu() {
+          window.removeEventListener('mousemove', mm);
+          window.removeEventListener('mouseup', mu);
+          end();
+        }
+        window.addEventListener('mousemove', mm);
+        window.addEventListener('mouseup', mu);
+      });
+    });
+
     window.addEventListener('resize', function () { setSheet(sheetState, true); });
     setSheet('peek', true);
   }

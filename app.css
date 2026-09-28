@@ -110,6 +110,15 @@ body{font-family:var(--sans);color:var(--ink);background:var(--bg-2);
 .row .rd{font-size:11px;color:var(--ink-3)}
 .empty{padding:34px 20px;text-align:center;color:var(--ink-3);font-size:13.5px;line-height:1.7}
 
+.legend{position:absolute;left:10px;bottom:calc(84px + var(--sab));z-index:620;
+  display:flex;gap:9px;align-items:center;background:var(--bg);opacity:.93;
+  border:1px solid var(--line);border-radius:8px;padding:5px 9px;
+  font-size:10.5px;color:var(--ink-2);pointer-events:none;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.legend span{display:flex;align-items:center;gap:3px;white-space:nowrap}
+.legend .lg{width:8px;height:8px;border-radius:50%;display:inline-block}
+.legend .lg.free{background:var(--free)} .legend .lg.tight{background:var(--tight)}
+.legend .lg.zero{background:var(--full)} .legend .lg.unk{background:var(--unknown)}
+
 .pickhint{position:absolute;top:calc(var(--sat) + 58px);left:50%;transform:translateX(-50%);
   z-index:650;background:var(--mark);color:#20180a;font-size:12.5px;font-weight:700;
   padding:7px 13px;border-radius:20px;box-shadow:0 2px 8px rgba(0,0,0,.25)}
