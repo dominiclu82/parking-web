@@ -5,7 +5,10 @@
   'use strict';
 
   var VERSION = '0.3.0';
-  var DATA_BASE = 'https://data.h-peak.com/data/';
+  // 資料改由自己的伺服器直送(Render),不再繞 GitHub Pages ——
+  // Pages 有 CDN 快取 + 每小時 10 次建置上限,實測資料要 4 分 40 秒才到得了手機,
+  // 停車位這種東西那樣就沒意義了。DNS 切到 parking.h-peak.com 之後這行換成自訂網域。
+  var DATA_BASE = 'https://parking-iqnl.onrender.com/data/';
   var LINE_URL = 'https://line.me/ti/g2/ArAw4k1D9vXEAMtBsButFLzSFjXzEvFXfKHQ2A';  // 家族共用
   var SUPPORT_MAIL = 'support@h-peak.com';
   var LEGAL = 'https://parking.h-peak.com/legal/';
