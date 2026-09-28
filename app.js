@@ -146,8 +146,6 @@
     }).addTo(map);
 
     map.on('moveend zoomend', refreshPins);
-    map.on('movestart zoomstart', function () { hideTabbar(); });
-    map.on('moveend zoomend', bumpTabIdle);
     map.on('click', function (e) {
       if (picking) { setMe(e.latlng.lat, e.latlng.lng, false); setPicking(false); }
       else { closeSheet(); }
@@ -428,18 +426,10 @@
   var tabIdle = null;
   function showTabbar() {
     $('tabbar').classList.remove('hidden');
-    $('tabHandle').hidden = true;
     clearTimeout(tabIdle);
   }
-  function hideTabbar() {
-    if (curTab !== 'near') return;
-    $('tabbar').classList.add('hidden');
-    $('tabHandle').hidden = false;
-  }
-  function bumpTabIdle() {
-    clearTimeout(tabIdle);
-    tabIdle = setTimeout(showTabbar, 2500);
-  }
+  /* 🔴 刻意不做「操作地圖時收合底列」。Jetstream 那個做法是給次要的全畫面頁用的;
+     這個 App 的主畫面就是地圖,一動就收等於版號永遠看不到(Dominic 2026-09-28)。 */
 
   // ---------- 常用 ----------
   function favKey(p) { return p.c + '|' + p.k + '|' + p.n + '|' + p.lat.toFixed(4); }
@@ -844,7 +834,6 @@
     document.querySelectorAll('.tab').forEach(function (b) {
       b.addEventListener('click', function () { switchTab(b.dataset.tab); });
     });
-    $('tabHandle').addEventListener('click', showTabbar);
     $('themeBtn').addEventListener('click', cycleTheme);
     $('langBtn').addEventListener('click', function () { applyLang(lang === 'zh' ? 'en' : 'zh'); });
     $('fontUp').addEventListener('click', function () { applyFont(fontIdx() + 1); });
@@ -908,6 +897,9 @@
     });
     setInterval(function () { fetchFresh().catch(function () {}); }, 5 * 60 * 1000);
     selfUpdate();
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(function () {});
+    }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();

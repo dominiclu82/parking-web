@@ -182,9 +182,14 @@ body{font-family:var(--sans);color:var(--ink);background:var(--bg-2);
 .pickhint{position:absolute;top:calc(var(--sat) + 62px);left:50%;transform:translateX(-50%);
   z-index:650;background:var(--mark);color:#20180a;font-size:12.5px;font-weight:700;
   padding:7px 13px;border-radius:20px;box-shadow:0 2px 8px rgba(0,0,0,.25)}
-.overlay{position:absolute;inset:0;z-index:950;background:rgba(0,0,0,.42);
-  display:flex;align-items:flex-end;justify-content:center}
-.ovcard{width:100%;max-width:560px;max-height:86%;background:var(--bg);
+/* 🔴 不要用百分比高度 + align-items:flex-end —— Safari 在 flex 容器裡解析百分比高度
+   不可靠,卡片會被推到可視範圍底下(只露出一條白邊)。
+   改成:overlay 本身 position:fixed 吃 dvh,卡片用 margin-top:auto 貼底、
+   高度用 dvh 而不是 %,而且給 min-height 擋住塌陷。 */
+.overlay{position:fixed;left:0;right:0;top:0;height:100vh;height:100dvh;z-index:950;
+  background:rgba(0,0,0,.42);display:flex;flex-direction:column;justify-content:flex-end}
+.ovcard{width:100%;max-width:560px;margin:auto auto 0;background:var(--bg);
+  max-height:86vh;max-height:86dvh;min-height:260px;
   border-radius:16px 16px 0 0;display:flex;flex-direction:column;overflow:hidden}
 .ovtop{flex:0 0 auto;padding:13px 16px 12px;border-bottom:1px solid var(--line)}
 .ovhead{display:flex;align-items:center;gap:10px}

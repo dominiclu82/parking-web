@@ -1,0 +1,17 @@
+{
+  "name": "停哪裡",
+  "short_name": "停哪裡",
+  "description": "臺北、新北、桃園即時停車位地圖",
+  "lang": "zh-Hant",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b5cab",
+  "theme_color": "#0b5cab",
+  "icons": [
+    { "src": "icons/icon-192.png",     "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png",     "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
