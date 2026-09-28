@@ -1,6 +1,6 @@
 /* 停哪裡 —— 離線快取。
    殼走 network-first(不然改版推不出去);圖磚與資料走 stale-while-revalidate。 */
-var V = 'pk-20260928121410';
+var V = 'pk-20260928124045';
 var SHELL = [
   './', 'index.html', 'app.css', 'app.js',
   'vendor/leaflet.js', 'vendor/leaflet.css',
@@ -27,6 +27,13 @@ self.addEventListener('activate', function (e) {
         return (k === V || k === TILE || k === DATA) ? null : caches.delete(k);
       }));
     }).then(function () { return self.clients.claim(); })
+     .then(function () {
+       /* 🔴 iOS 的 PWA 換版本非常黏:舊頁面會一直用舊的 shell。
+          新版 SW 接管後主動通知所有開著的視窗重載一次,不然使用者要手動刪掉重裝。 */
+       return self.clients.matchAll({ type: 'window' }).then(function (cs) {
+         cs.forEach(function (c) { c.postMessage({ type: 'pk-updated' }); });
+       });
+     })
   );
 });
 

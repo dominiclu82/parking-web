@@ -461,6 +461,15 @@
   }
 
   /* ────────── 設定 ────────── */
+  function buildStamp() {
+    var sc = document.querySelector('script[src*="app.js"]');
+    var m = sc && /[?&]v=(\d+)/.exec(sc.src);
+    return m ? m[1] : '—';
+  }
+  function isStandalone() {
+    return (window.navigator.standalone === true) ||
+           (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  }
   function renderSettings() {
     var at = parseInt(lsGet(LS.at) || '0', 10);
     var h = '<div class="card2"><h2>' + t('setData') + '</h2>' +
@@ -491,7 +500,12 @@
         : '新北市路邊車格的狀態碼含意尚未確認,那些數字請當作參考。') + '</p></div>';
     h += '<div class="card2"><h2>' + t('setAbout') + '</h2>' +
       '<div class="kv"><span>' + t('version') + '</span><span>' + VERSION + '</span></div>' +
-      '<div class="kv"><span>' + t('coverage') + '</span><span>' + t('cover') + '</span></div></div>';
+      '<div class="kv"><span>' + t('coverage') + '</span><span>' + t('cover') + '</span></div>' +
+      '<div class="kv"><span>build</span><span>' + esc(buildStamp()) + '</span></div>' +
+      '<div class="kv"><span>模式</span><span>' + (isStandalone() ? 'PWA' : 'Safari') + '</span></div>' +
+      '<div class="kv"><span>Service Worker</span><span>' +
+        (('serviceWorker' in navigator) ? (navigator.serviceWorker.controller ? '✅' : '未接管') : '不支援') +
+      '</span></div></div>';
     $('setBody').innerHTML = h;
   }
 
@@ -748,7 +762,23 @@
     });
     setInterval(function () { fetchFresh().catch(function () {}); }, 5 * 60 * 1000);
     selfUpdate();
-    if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(function () {});
+      /* 新版 SW 接管 → 重載一次(有旗標防止無限迴圈) */
+      navigator.serviceWorker.addEventListener('message', function (e) {
+        if (e.data && e.data.type === 'pk-updated') {
+          var n = 0;
+          try { n = parseInt(sessionStorage.getItem('pk.swreload') || '0', 10) || 0; } catch (err) {}
+          if (n >= 2) return;
+          try { sessionStorage.setItem('pk.swreload', String(n + 1)); } catch (err) {}
+          location.reload();
+        }
+      });
+      // 每次回到前景檢查一次有沒有新版 SW
+      document.addEventListener('visibilitychange', function () {
+        if (!document.hidden) navigator.serviceWorker.getRegistration().then(function (r) { if (r) r.update(); }).catch(function () {});
+      });
+    }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
