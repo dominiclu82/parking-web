@@ -864,6 +864,34 @@
   }
 
   // ---------- 啟動 ----------
+
+  /* 🔴 GitHub Pages 的 HTML 帶 max-age=600,手機會抓到最多 10 分鐘前的舊 index.html,
+     於是連帶載到舊的 app.js —— 我們因此一起追過好幾個「已經修掉」的 bug。
+     解法:開機時比對伺服器上的 build 戳記,不一樣就自己重載一次(只會發生一次)。 */
+  function selfUpdate() {
+    var mine = (function () {
+      var m = (document.currentScript && document.currentScript.src) || '';
+      var all = document.getElementsByTagName('script');
+      for (var i = 0; i < all.length; i++) if (/app\.js/.test(all[i].src)) m = all[i].src;
+      var q = /[?&]v=(\d+)/.exec(m || '');
+      return q ? q[1] : null;
+    })();
+    if (!mine) return;
+    fetch('build.txt?t=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.text() : null; })
+      .then(function (txt) {
+        if (!txt) return;
+        var latest = txt.trim();
+        if (!/^\d+$/.test(latest) || latest === mine) return;
+        var tried = 0;
+        try { tried = parseInt(sessionStorage.getItem('pk.reload') || '0', 10) || 0; } catch (e) {}
+        if (tried >= 2) return;                       // 防呆:最多自動重載兩次
+        try { sessionStorage.setItem('pk.reload', String(tried + 1)); } catch (e) {}
+        location.replace(location.pathname + '?b=' + latest);
+      })
+      .catch(function () {});
+  }
+
   function boot() {
     applyTheme(lsGet(LS.theme) || 'auto');
     applyFont(fontIdx());
@@ -879,6 +907,7 @@
       }
     });
     setInterval(function () { fetchFresh().catch(function () {}); }, 5 * 60 * 1000);
+    selfUpdate();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
