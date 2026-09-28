@@ -183,3 +183,11 @@ body{font-family:var(--sans);color:var(--ink);background:var(--bg-2);-webkit-fon
 .toast{position:absolute;bottom:calc(var(--tabh) + 16px);left:50%;transform:translateX(-50%);z-index:900;
   background:rgba(20,26,33,.94);color:#fff;font-size:13px;padding:10px 16px;border-radius:22px;
   max-width:86%;text-align:center}
+
+/* 🔴 底列在 Safari 看不到的真因:hpeak-ui.css 把 .hp-tabbar 設成 position:fixed;bottom:0,
+   而手機 Safari 的 fixed 是貼「大視窗」的底 —— 那個底在網址列/工具列後面。
+   家族那份是給原生 App 寫的(WKWebView 沒有瀏覽器 chrome,所以永遠正確)。
+   網頁版改成貼 #app 的底(#app 吃 100dvh,會跟著工具列伸縮);原生 App 裡
+   100dvh == 100vh,這個覆寫不會造成任何差別。
+   ⚠ z-index 要蓋過清單面板(800),否則清單展開時會壓在底列上面。 */
+#app > .hp-tabbar{ position:absolute; bottom:0; z-index:880; }
