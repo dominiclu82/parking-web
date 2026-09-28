@@ -716,6 +716,37 @@
   ];
   // 家族共用的同一個社群連結(跟 CrewSync / PeakLog / Jetstream 同一顆)
   var LINE_URL = 'https://line.me/ti/g2/ArAw4k1D9vXEAMtBsButFLzSFjXzEvFXfKHQ2A';
+  var SUPPORT_MAIL = 'support@h-peak.com';
+  function reportMailto() {
+    var T = function (zh, en) { return lang === 'en' ? en : zh; };
+    var L = [];
+    L.push(T('(請在這裡描述問題,下面是診斷資訊,可以自行刪除)',
+             '(Describe the problem here. Diagnostics below — feel free to delete.)'));
+    L.push(''); L.push('---');
+    L.push('App: 停哪裡 / Taiwan Parking  v' + VERSION);
+    L.push('Lang: ' + lang);
+    var at = parseInt(lsGet(LS.at) || '0', 10);
+    L.push('Data fetched: ' + (at ? new Date(at).toISOString() : 'n/a'));
+    if (META && META.generated) L.push('Data generated: ' + META.generated);
+    L.push('Places: ' + P.length);
+    if (META && META.sources) {
+      Object.keys(META.sources).forEach(function (k) {
+        var sc = META.sources[k];
+        L.push('  ' + k + ': ' + (sc.ok ? 'ok ' + sc.count : 'FAIL ' + (sc.error || '')));
+      });
+    }
+    if (map) {
+      var c = map.getCenter();
+      L.push('Map: ' + c.lat.toFixed(5) + ',' + c.lng.toFixed(5) + ' z' + map.getZoom());
+    }
+    if (sel) L.push('Viewing: ' + (sel.n || '') + ' (' + sel.c + ')');
+    L.push('UA: ' + (navigator.userAgent || '').slice(0, 120));
+    var subj = T('停哪裡 回報 v', 'Taiwan Parking report v') + VERSION;
+    return 'mailto:' + SUPPORT_MAIL +
+           '?subject=' + encodeURIComponent(subj) +
+           '&body=' + encodeURIComponent(L.join('\n'));
+  }
+
   function openAbout() {
     var T = function (zh, en) { return lang === 'en' ? en : zh; };
     $('aboutTop').innerHTML =
@@ -735,8 +766,8 @@
       '<div class="rep2">' +
         '<a class="comm" href="' + LINE_URL + '" target="_blank" rel="noopener">💬 ' +
           T('社群討論', 'Community') + '<div class="sub2">' + T('可匿名 Anonymous', 'Anonymous') + '</div></a>' +
-        '<button type="button" class="priv off" id="clReport">🔒 ' +
-          T('私下回報', 'Private report') + '<div class="sub2">' + T('尚未開放 Coming soon', 'Coming soon') + '</div></button>' +
+        '<a class="priv" id="clReport" href="' + reportMailto() + '">🔒 ' +
+          T('私下回報', 'Private report') + '<div class="sub2">' + T('寄信給站長 Email', 'Email') + '</div></a>' +
       '</div>';
 
     var h = '';
