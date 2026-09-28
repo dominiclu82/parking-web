@@ -1,6 +1,6 @@
 /* 停哪裡 —— 離線快取。
    殼走 network-first(不然改版推不出去);圖磚與資料走 stale-while-revalidate。 */
-var V = 'pk-20260928105105';
+var V = 'pk-20260928105601';
 var SHELL = [
   './', 'index.html', 'app.css', 'app.js',
   'vendor/leaflet.js', 'vendor/leaflet.css',
