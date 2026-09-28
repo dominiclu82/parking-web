@@ -149,9 +149,11 @@ body{font-family:var(--sans);color:var(--ink);background:var(--bg-2);-webkit-fon
 /* ── 更新日誌(版面照 PeakLog:上下固定、只有中間捲動)── */
 /* 🔴 高度一律用 dvh,不要用百分比 —— Safari 在 flex 容器裡解析百分比高度不可靠,
    卡片會塌成一條白邊(2026-09-28 踩過三次)。 */
-.overlay{position:fixed;left:0;right:0;top:0;height:100vh;height:100dvh;z-index:950;
+/* 🔴 貼 #app 不要貼視窗:跟底列同一個理由 —— Safari 的 fixed 底在工具列後面。
+   #app 吃 100dvh,absolute 就會被它框住。 */
+.overlay{position:absolute;inset:0;z-index:950;
   background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:14px 12px}
-.ovcard{width:100%;max-width:560px;max-height:84vh;max-height:84dvh;
+.ovcard{width:100%;max-width:560px;max-height:100%;
   background:var(--panel);border:1px solid var(--line);border-radius:16px;
   display:flex;flex-direction:column;overflow:hidden}
 .ovtop{flex:0 0 auto;padding:16px 16px 14px}

@@ -268,13 +268,21 @@
       '</div>' +
       '<div class="sh-meta">' + fmtD(d) + ' · ' + walk(d) + (p.r ? '<br>' + esc(p.r) : '') + '</div>' +
       '<div class="navrow">' +
-        '<a class="navbtn" target="_blank" rel="noopener" href="' + u.apple + '">' + t('appleMap') + '</a>' +
-        '<a class="navbtn alt" target="_blank" rel="noopener" href="' + u.google + '">' + t('googleMap') + '</a>' +
+        '<a class="navbtn" data-ext href="' + u.apple + '">' + t('appleMap') + '</a>' +
+        '<a class="navbtn alt" data-ext href="' + u.google + '">' + t('googleMap') + '</a>' +
         '<button class="favbtn' + (isFav(p) ? ' on' : '') + '" id="favToggle">' +
           (isFav(p) ? t('favOn') : t('favAdd')) + '</button>' +
       '</div>';
     $('sheet').hidden = false;
     $('shClose').addEventListener('click', function (e) { e.stopPropagation(); closeSheet(); });
+    $('sheetBody').querySelectorAll('[data-ext]').forEach(function (a) {
+      a.addEventListener('click', function (e) {
+        e.preventDefault(); e.stopPropagation();
+        var w = null;
+        try { w = window.open(a.href, '_blank'); } catch (err) {}
+        if (!w) location.href = a.href;
+      });
+    });
     $('favToggle').addEventListener('click', function (e) {
       e.stopPropagation();
       var on = toggleFav(p);
@@ -534,7 +542,7 @@
           /* 社群(公開、可匿名)與私下回報各一半 —— 文字與配色跟家族一字不差,
              唯一差別是這個 App 沒有後端,右邊那顆走 mailto。 */
           '<div class="rep2">' +
-            '<a class="comm" href="' + LINE_URL + '" target="_blank" rel="noopener">💬 ' + t('community') +
+            '<a class="comm" data-ext href="' + LINE_URL + '">💬 ' + t('community') +
               '<div class="sub2">' + t('anon') + '</div></a>' +
             '<a class="priv" href="' + reportMailto() + '">🔒 ' + t('report') +
               '<div class="sub2">' + t('priv') + '</div></a></div>' +
@@ -545,13 +553,24 @@
             '</ul></div>';
         }).join('') + '</div>' +
         '<div class="ovfoot">' +
-          '<a href="' + LEGAL + 'privacy.html" target="_blank" rel="noopener">Privacy ' + t('lPriv') + '</a>' +
-          '<a href="' + LEGAL + 'terms.html" target="_blank" rel="noopener">Terms ' + t('lTerms') + '</a>' +
-          '<a href="' + LEGAL + 'support.html" target="_blank" rel="noopener">Support ' + t('lSup') + '</a>' +
-          '<a href="' + LEGAL + 'sources.html" target="_blank" rel="noopener">Sources ' + t('lSrc') + '</a>' +
+          '<a href="' + LEGAL + 'privacy.html" data-ext>Privacy ' + t('lPriv') + '</a>' +
+          '<a href="' + LEGAL + 'terms.html" data-ext>Terms ' + t('lTerms') + '</a>' +
+          '<a href="' + LEGAL + 'support.html" data-ext>Support ' + t('lSup') + '</a>' +
+          '<a href="' + LEGAL + 'sources.html" data-ext>Sources ' + t('lSrc') + '</a>' +
         '</div>' +
       '</div>';
     $('aboutClose').addEventListener('click', function () { ov.hidden = true; });
+    ov.addEventListener('click', function (e) { if (e.target === ov) ov.hidden = true; });
+    /* 🔴 加到主畫面的 standalone PWA 裡,target="_blank" 是死的(不開新分頁也不導航)。
+       改成自己開:先試 window.open,失敗就同頁導航(法務頁上有「回到 App」)。 */
+    ov.querySelectorAll('[data-ext]').forEach(function (a) {
+      a.addEventListener('click', function (e) {
+        e.preventDefault();
+        var w = null;
+        try { w = window.open(a.href, '_blank'); } catch (err) {}
+        if (!w) location.href = a.href;
+      });
+    });
     $('clZh').addEventListener('click', function () { applyLang('zh'); openAbout(); });
     $('clEn').addEventListener('click', function () { applyLang('en'); openAbout(); });
     ov.hidden = false;
