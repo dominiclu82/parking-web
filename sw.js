@@ -1,6 +1,6 @@
 /* 停哪裡 —— 離線快取。
    殼走 network-first(不然改版推不出去);圖磚與資料走 stale-while-revalidate。 */
-var V = 'pk-20260928131331';
+var V = 'pk-20260928131951';
 var SHELL = [
   './', 'index.html', 'app.css', 'app.js',
   'vendor/leaflet.js', 'vendor/leaflet.css',
@@ -51,8 +51,9 @@ self.addEventListener('fetch', function (e) {
   if (req.method !== 'GET') return;
   var url = new URL(req.url);
 
-  // 版本戳:一定要拿到最新的,不可以走快取
+  // 版本戳與法務頁:一定要拿到最新的,不可以走快取
   if (/build\.txt$/.test(url.pathname)) return;
+  if (/\/legal\//.test(url.pathname)) return;
 
   // 地圖圖磚:先給快取、背景更新
   if (/tile\.openstreetmap\.org$/.test(url.hostname)) {

@@ -461,6 +461,12 @@
   }
 
   /* ────────── 設定 ────────── */
+  function legalUrl(name) {
+    /* 🔴 法務頁是純 HTML,沒有版本戳,而 GitHub Pages 給 10 分鐘快取、
+       Service Worker 也會存一份 —— 改了內容使用者卻還看到舊版(他因此回報
+       「資料來源沒有其他分頁連結」,其實新版早就有了)。帶上 build 戳就永遠是最新。 */
+    return LEGAL + name + '.html?v=' + buildStamp();
+  }
   function buildStamp() {
     var sc = document.querySelector('script[src*="app.js"]');
     var m = sc && /[?&]v=(\d+)/.exec(sc.src);
@@ -567,10 +573,10 @@
             '</ul></div>';
         }).join('') + '</div>' +
         '<div class="ovfoot">' +
-          '<a href="' + LEGAL + 'privacy.html" data-ext>Privacy ' + t('lPriv') + '</a>' +
-          '<a href="' + LEGAL + 'terms.html" data-ext>Terms ' + t('lTerms') + '</a>' +
-          '<a href="' + LEGAL + 'support.html" data-ext>Support ' + t('lSup') + '</a>' +
-          '<a href="' + LEGAL + 'sources.html" data-ext>Sources ' + t('lSrc') + '</a>' +
+          '<a href="' + legalUrl('privacy') + '" data-ext>Privacy ' + t('lPriv') + '</a>' +
+          '<a href="' + legalUrl('terms') + '" data-ext>Terms ' + t('lTerms') + '</a>' +
+          '<a href="' + legalUrl('support') + '" data-ext>Support ' + t('lSup') + '</a>' +
+          '<a href="' + legalUrl('sources') + '" data-ext>Sources ' + t('lSrc') + '</a>' +
         '</div>' +
       '</div>';
     $('aboutClose').addEventListener('click', function () { ov.hidden = true; });
