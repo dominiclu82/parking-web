@@ -6,7 +6,7 @@
 <meta name="color-scheme" content="light dark">
 <title>停哪裡</title>
 <link rel="stylesheet" href="vendor/leaflet.css">
-<link rel="stylesheet" href="app.css?v=20260928103638">
+<link rel="stylesheet" href="app.css?v=20260928103902">
 </head>
 <body>
 <div id="app">
@@ -99,13 +99,9 @@
 
   <div id="aboutOv" class="overlay" hidden>
     <div class="ovcard">
-      <div class="ovhead">
-        <strong data-i18n="changelog">更新日誌</strong>
-        <button id="aboutClose" class="iconbtn" aria-label="關閉">
-          <svg viewBox="0 0 24 24" width="17" height="17"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
-        </button>
-      </div>
+      <div class="ovtop" id="aboutTop"></div>
       <div class="ovbody" id="aboutBody"></div>
+      <div class="ovfoot" id="aboutFoot"></div>
     </div>
   </div>
 
@@ -113,6 +109,6 @@
 </div>
 
 <script src="vendor/leaflet.js"></script>
-<script src="app.js?v=20260928103638"></script>
+<script src="app.js?v=20260928103902"></script>
 </body>
 </html>

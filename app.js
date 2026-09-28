@@ -714,20 +714,46 @@
       ['北北桃即時車位地圖。', 'Live parking map for northern Taiwan.']
     ] }
   ];
-  var LINE_URL = '';   // ← 社群連結還沒有,拿到再填
+  // 家族共用的同一個社群連結(跟 CrewSync / PeakLog / Jetstream 同一顆)
+  var LINE_URL = 'https://line.me/ti/g2/ArAw4k1D9vXEAMtBsButFLzSFjXzEvFXfKHQ2A';
   function openAbout() {
-    var h = '<div class="rep2">' +
-      (LINE_URL ? '<a class="pri" target="_blank" rel="noopener" href="' + LINE_URL + '">' + t('community') + '</a>'
-                : '<button class="off">' + t('community') + '</button>') +
-      '<button class="off">' + t('reportSoon') + '</button></div>';
+    var T = function (zh, en) { return lang === 'en' ? en : zh; };
+    $('aboutTop').innerHTML =
+      '<div class="ovhead"><strong>' + T('更新日誌', 'What’s new') + '</strong>' +
+      '<button id="aboutClose" class="iconbtn" aria-label="' + T('關閉', 'Close') + '">' +
+      '<svg viewBox="0 0 24 24" width="17" height="17"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>' +
+      '</button></div>' +
+      '<div class="ovsub">' + T('北北桃即時車位地圖', 'Live parking map for northern Taiwan') + '</div>' +
+      '<div class="ovver">v' + VERSION + '</div>' +
+      '<div class="lang2">' +
+        '<button id="clZh" class="' + (lang === 'zh' ? 'on' : '') + '">中文</button>' +
+        '<button id="clEn" class="' + (lang === 'en' ? 'on' : '') + '">EN</button>' +
+      '</div>' +
+      /* 社群(公開、可匿名)與私下回報各一半。分兩顆的理由:回報常要附截圖,
+         貼進社群等於公開給群裡每個人看。⚠ 右邊那顆不要叫「寄信」——
+         使用者不寄信(信是伺服器寄的),叫寄信他會以為要跳出信箱而不敢按。 */
+      '<div class="rep2">' +
+        '<a class="comm" href="' + LINE_URL + '" target="_blank" rel="noopener">💬 ' +
+          T('社群討論', 'Community') + '<div class="sub2">' + T('可匿名 Anonymous', 'Anonymous') + '</div></a>' +
+        '<button type="button" class="priv off" id="clReport">🔒 ' +
+          T('私下回報', 'Private report') + '<div class="sub2">' + T('尚未開放 Coming soon', 'Coming soon') + '</div></button>' +
+      '</div>';
+
+    var h = '';
     CHANGELOG.forEach(function (c) {
       h += '<div class="cl"><span class="v">v' + c.v + '</span><span class="d">' + c.d + '</span><ul>';
-      c.items.forEach(function (it) {
-        h += '<li>' + esc(lang === 'en' ? it[1] : it[0]) + '</li>';
-      });
+      c.items.forEach(function (it) { h += '<li>' + esc(lang === 'en' ? it[1] : it[0]) + '</li>'; });
       h += '</ul></div>';
     });
     $('aboutBody').innerHTML = h;
+
+    // Apple 送審要求政策與支援入口要找得到,不能只藏在捲動內容尾端
+    $('aboutFoot').innerHTML =
+      '<span>' + T('資料來源:臺北市、新北市、桃園市政府開放資料平臺',
+                   'Data: Taipei, New Taipei & Taoyuan open data') + '</span>';
+
+    $('clZh').addEventListener('click', function () { applyLang('zh'); openAbout(); });
+    $('clEn').addEventListener('click', function () { applyLang('en'); openAbout(); });
     $('aboutOv').hidden = false;
   }
 
@@ -792,7 +818,6 @@
     $('langBtn').addEventListener('click', function () { applyLang(lang === 'zh' ? 'en' : 'zh'); });
     $('fontUp').addEventListener('click', function () { applyFont(fontIdx() + 1); });
     $('fontDn').addEventListener('click', function () { applyFont(fontIdx() - 1); });
-    $('aboutClose').addEventListener('click', function () { $('aboutOv').hidden = true; });
     $('aboutOv').addEventListener('click', function (e) { if (e.target === $('aboutOv')) $('aboutOv').hidden = true; });
     $('verBtn').textContent = 'v' + VERSION;
     $('verBtn').addEventListener('click', openAbout);
