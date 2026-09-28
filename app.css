@@ -70,12 +70,25 @@ body{font-family:var(--sans);color:var(--ink);background:var(--bg-2);
   padding:12px 8px;border-radius:11px;background:var(--sign);color:#fff}
 .navbtn.alt{background:var(--bg-2);color:var(--ink)}
 
-.listpane{position:absolute;inset:0;top:auto;height:62%;z-index:800;background:var(--bg);
+.listpane{position:absolute;left:0;right:0;bottom:0;height:88%;z-index:800;background:var(--bg);
   border-top:1px solid var(--line);border-radius:16px 16px 0 0;display:flex;flex-direction:column;
-  box-shadow:0 -4px 24px rgba(0,0,0,.22)}
-.listhead{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}
+  box-shadow:0 -4px 24px rgba(0,0,0,.22);
+  transform:translateY(calc(100% - 78px));
+  transition:transform .26s cubic-bezier(.32,.72,0,1);
+  touch-action:none}
+.listpane.dragging{transition:none}
+/* 整條頂端都是握把,好抓 */
+.sheet-grip{flex:0 0 auto;padding:7px 0 3px;cursor:grab;touch-action:none}
+.sheet-grip .bar{width:40px;height:4.5px;border-radius:3px;background:var(--line);margin:0 auto}
+.listpane.dragging .sheet-grip{cursor:grabbing}
+.listhead{display:flex;align-items:center;gap:10px;padding:4px 14px 11px;border-bottom:1px solid var(--line);
+  touch-action:none}
 .listhead strong{font-size:15px;flex:0 0 auto}
+.listhead .cnt{font-size:12px;color:var(--ink-3);font-weight:500}
 .listhead .seg{margin-left:auto}
+/* 收起來的時候,排序鈕跟關閉鈕沒有意義,藏起來讓那一條乾淨 */
+.listpane.peek .seg,.listpane.peek #listClose{display:none}
+.listpane.peek .listhead{border-bottom:0}
 .listbody{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(10px + var(--sab))}
 .row{display:flex;gap:11px;align-items:center;padding:11px 14px;border-bottom:1px solid var(--line);cursor:pointer}
 .row:active{background:var(--bg-2)}

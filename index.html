@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<title>車位</title>
+<title>停哪裡</title>
 <link rel="stylesheet" href="vendor/leaflet.css">
 <link rel="stylesheet" href="app.css">
 </head>
@@ -42,9 +42,10 @@
     <div id="sheetBody"></div>
   </div>
 
-  <div id="listPane" class="listpane" hidden>
+  <div id="listPane" class="listpane peek">
+    <div class="sheet-grip" id="grip"><div class="bar"></div></div>
     <div class="listhead">
-      <strong id="listTitle">附近車位</strong>
+      <strong id="listTitle">附近車位</strong><span class="cnt" id="listCount"></span>
       <div class="seg small">
         <button class="segb on" data-sort="dist">最近</button>
         <button class="segb" data-sort="price">最便宜</button>

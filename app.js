@@ -9,6 +9,7 @@
 
   var P = [], META = null, map = null, layer = null, meMarker = null;
   var sel = null, picking = false, sortMode = 'dist';
+  var sheetState = 'peek';   // peek | half | full
   var filterAvail = 'free', filterKind = 'all';
   var me = { lat: HOME.lat, lon: HOME.lon, real: false };
   var markers = [];
@@ -66,7 +67,7 @@
     META = meta || null;
     renderStale(cached);
     refreshPins();
-    if (!$('listPane').hidden) renderList();
+    renderList();
   }
 
   function loadCache() {
@@ -152,7 +153,7 @@
     lsSet(LS.me, JSON.stringify({ lat: lat, lon: lon }));
     if (meMarker) meMarker.setLatLng([lat, lon]);
     refreshPins();
-    if (!$('listPane').hidden) renderList();
+    renderList();
   }
   function setPicking(on) {
     picking = on;
@@ -215,6 +216,7 @@
     };
   }
   function openSheet(p) {
+    if (sheetState !== 'peek') setSheet('peek');
     sel = p; refreshPins();
     var k = cls(p), d = dist(me.lat, me.lon, p.lat, p.lon), u = navUrls(p), ft = feeTxt(p);
     var av = p.av == null ? '<span class="n">未知</span><div class="t">來源未提供</div>'
@@ -252,6 +254,8 @@
     else near.sort(function (a, b) { return a._d - b._d; });
     near = near.slice(0, 80);
 
+    var cntEl = $('listCount');
+    if (cntEl) cntEl.textContent = near.length ? '· ' + near.length + ' 個有空位' : '· 附近沒有';
     var body = $('listBody');
     if (!near.length) {
       body.innerHTML = '<div class="empty">附近 5 公里內沒有符合的地點。<br>試試切到「全部」,或把地圖移到別的地方。</div>';
@@ -273,11 +277,75 @@
     body.querySelectorAll('.row').forEach(function (el) {
       el.addEventListener('click', function () {
         var p3 = near[parseInt(el.dataset.i, 10)];
-        $('listPane').hidden = true;
+        setSheet('peek');
         map.setView([p3.lat, p3.lon], Math.max(map.getZoom(), 16));
         openSheet(p3);
       });
     });
+  }
+
+
+  // ---------- 可拖曳的底部面板 ----------
+  var PEEK = 78;                       // 收起來時露出的高度
+  function paneH() { return $('listPane').getBoundingClientRect().height; }
+  function offsetFor(state) {
+    var H = paneH();
+    if (state === 'full') return 0;
+    if (state === 'half') return Math.round(H * 0.46);
+    return Math.max(0, H - PEEK);      // peek
+  }
+  function setSheet(state, skipAnim) {
+    sheetState = state;
+    var pane = $('listPane');
+    pane.classList.toggle('peek', state === 'peek');
+    if (skipAnim) pane.classList.add('dragging');
+    pane.style.transform = 'translateY(' + offsetFor(state) + 'px)';
+    if (skipAnim) requestAnimationFrame(function () { pane.classList.remove('dragging'); });
+    $('listBtn').classList.toggle('on', state !== 'peek');
+    if (state !== 'peek') renderList();
+  }
+  function initSheetDrag() {
+    var pane = $('listPane');
+    var start = null, startY = 0, moved = 0;
+    function begin(e) {
+      start = offsetFor(sheetState); startY = e.clientY; moved = 0;
+      pane.classList.add('dragging');
+      pane.setPointerCapture && pane.setPointerCapture(e.pointerId);
+    }
+    function move(e) {
+      if (start == null) return;
+      var dy = e.clientY - startY;
+      moved = Math.max(moved, Math.abs(dy));
+      var H = paneH();
+      var y = Math.min(Math.max(0, start + dy), Math.max(0, H - PEEK));
+      pane.style.transform = 'translateY(' + y + 'px)';
+    }
+    function end() {
+      if (start == null) return;
+      pane.classList.remove('dragging');
+      var cur = parseFloat((pane.style.transform.match(/-?[\d.]+/) || [0])[0]) || 0;
+      if (moved < 6) {                                   // 當成點擊:收起 ↔ 半開
+        setSheet(sheetState === 'peek' ? 'half' : 'peek');
+      } else {                                           // 吸附到最近的一段
+        var best = 'peek', bd = Infinity;
+        ['full', 'half', 'peek'].forEach(function (st) {
+          var d = Math.abs(offsetFor(st) - cur);
+          if (d < bd) { bd = d; best = st; }
+        });
+        setSheet(best);
+      }
+      start = null;
+    }
+    ['#grip', '.listhead'].forEach(function (sel2) {
+      var el = pane.querySelector(sel2);
+      if (!el) return;
+      el.addEventListener('pointerdown', begin);
+      el.addEventListener('pointermove', move);
+      el.addEventListener('pointerup', end);
+      el.addEventListener('pointercancel', end);
+    });
+    window.addEventListener('resize', function () { setSheet(sheetState, true); });
+    setSheet('peek', true);
   }
 
   // ---------- 定位 ----------
@@ -308,14 +376,14 @@
       b.addEventListener('click', function () {
         document.querySelectorAll('[data-filter]').forEach(function (x) { x.classList.remove('on'); });
         b.classList.add('on'); filterAvail = b.dataset.filter;
-        refreshPins(); if (!$('listPane').hidden) renderList();
+        refreshPins(); renderList();
       });
     });
     document.querySelectorAll('[data-kind]').forEach(function (b) {
       b.addEventListener('click', function () {
         document.querySelectorAll('[data-kind]').forEach(function (x) { x.classList.remove('on'); });
         b.classList.add('on'); filterKind = b.dataset.kind;
-        refreshPins(); if (!$('listPane').hidden) renderList();
+        refreshPins(); renderList();
       });
     });
     document.querySelectorAll('[data-sort]').forEach(function (b) {
@@ -333,11 +401,11 @@
       lb.addEventListener(ev, function () { clearTimeout(holdT); });
     });
     $('listBtn').addEventListener('click', function () {
-      var pane = $('listPane');
-      pane.hidden = !pane.hidden;
-      if (!pane.hidden) { closeSheet(); renderList(); }
+      setSheet(sheetState === 'peek' ? 'half' : 'peek');
+      if (sheetState !== 'peek') closeSheet();
     });
-    $('listClose').addEventListener('click', function () { $('listPane').hidden = true; });
+    $('listClose').addEventListener('click', function () { setSheet('peek'); });
+    initSheetDrag();
     document.addEventListener('visibilitychange', function () {
       if (!document.hidden) fetchFresh().catch(function () {});
     });
