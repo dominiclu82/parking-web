@@ -306,43 +306,54 @@
   }
   function initSheetDrag() {
     var pane = $('listPane');
-    var start = null, startY = 0, moved = 0;
-    function begin(e) {
-      start = offsetFor(sheetState); startY = e.clientY; moved = 0;
-      pane.classList.add('dragging');
-      pane.setPointerCapture && pane.setPointerCapture(e.pointerId);
-    }
-    function move(e) {
-      if (start == null) return;
+    var startOff = null, startY = 0, moved = 0, curY = 0;
+
+    function onMove(e) {
+      if (startOff == null) return;
+      e.preventDefault();
       var dy = e.clientY - startY;
       moved = Math.max(moved, Math.abs(dy));
       var H = paneH();
-      var y = Math.min(Math.max(0, start + dy), Math.max(0, H - PEEK));
-      pane.style.transform = 'translateY(' + y + 'px)';
+      curY = Math.min(Math.max(0, startOff + dy), Math.max(0, H - PEEK));
+      pane.style.transform = 'translateY(' + curY + 'px)';
     }
-    function end() {
-      if (start == null) return;
+    function onEnd() {
+      if (startOff == null) return;
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onEnd);
+      window.removeEventListener('pointercancel', onEnd);
       pane.classList.remove('dragging');
-      var cur = parseFloat((pane.style.transform.match(/-?[\d.]+/) || [0])[0]) || 0;
-      if (moved < 6) {                                   // 當成點擊:收起 ↔ 半開
+      if (moved < 8) {
         setSheet(sheetState === 'peek' ? 'half' : 'peek');
-      } else {                                           // 吸附到最近的一段
+      } else {
         var best = 'peek', bd = Infinity;
         ['full', 'half', 'peek'].forEach(function (st) {
-          var d = Math.abs(offsetFor(st) - cur);
+          var d = Math.abs(offsetFor(st) - curY);
           if (d < bd) { bd = d; best = st; }
         });
         setSheet(best);
       }
-      start = null;
+      startOff = null;
     }
-    ['#grip', '.listhead'].forEach(function (sel2) {
-      var el = pane.querySelector(sel2);
-      if (!el) return;
-      el.addEventListener('pointerdown', begin);
-      el.addEventListener('pointermove', move);
-      el.addEventListener('pointerup', end);
-      el.addEventListener('pointercancel', end);
+    function onStart(e) {
+      // 標題列上的按鈕(排序、關閉)不該觸發拖曳
+      if (e.target.closest && e.target.closest('button')) return;
+      startOff = offsetFor(sheetState);
+      curY = startOff;
+      startY = e.clientY;
+      moved = 0;
+      pane.classList.add('dragging');
+      // 🔴 監聽器要掛在 window:掛在子元素上、又對父層 setPointerCapture,
+      //    事件會被導去父層,子元素永遠收不到 move/up(手機上就是完全拖不動)。
+      window.addEventListener('pointermove', onMove, { passive: false });
+      window.addEventListener('pointerup', onEnd);
+      window.addEventListener('pointercancel', onEnd);
+      e.preventDefault();
+    }
+
+    ['#grip', '.listhead'].forEach(function (q) {
+      var el = pane.querySelector(q);
+      if (el) el.addEventListener('pointerdown', onStart, { passive: false });
     });
     window.addEventListener('resize', function () { setSheet(sheetState, true); });
     setSheet('peek', true);
