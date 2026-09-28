@@ -1,0 +1,446 @@
+/* h-peak 家族元件(Jetstream 版)。
+   規格逐字抄自 CrewSync/PeakLog(pilot-sync-mobile src/spa/styles.ts):底部主選單 .tab-bar、
+   util 區(日夜直立膠囊/A+A− 方塊/版號)、頂部 submenu chip(.roster-subtab 同款)與拖曳樣式。
+   三個產品介面要長一樣(Dominic 拍板)——改這裡前先看 CrewSync 有沒有同步改。
+   色票:各頁把自家變數對映到 --hp-*(index/brief 用 --panel/--line,觀星三頁用 --surface/--rule),
+   沒對映就退到 Jetstream 深色預設值。 */
+:root {
+  --hp-asset-ver: 'V2.4.0';   /* 版本哨兵:JS 讀這個值,才知道載到的 CSS 是不是舊的(codex P2) */
+  /* 🔴 左右安全區。**這不是「為折疊機做的」** —— 我們每一頁都宣告 viewport-fit=cover,
+     所以現在的 iPhone 只要轉成橫向,有動態島那一側就是 44px,內容會鋪到它底下。
+     全站 140 處處理了上下,左右原本只有 4 處(2026-09-10 清查)。
+     折疊機(iPhone Duo,動態島改成直的在側邊)只是讓它在直立時也發生。
+     ⚠ 包一層變數不是多此一舉:env() 在測試環境永遠是 0,量不出對錯;
+       包了之後測試可以覆寫 --hp-sal/--hp-sar 來驗版面(--hp-sat 也是同一套做法)。 */
+  --hp-sal: env(safe-area-inset-left, 0px);
+  --hp-sar: env(safe-area-inset-right, 0px);
+  --hp-card: var(--panel, #111a2c);
+  --hp-dim: var(--line, #223344);
+  --hp-muted: var(--muted, #8b98a9);
+  --hp-accent: var(--accent, #38bdf8);
+  --hp-fg: var(--fg, var(--ink, #e6edf3));   /* 觀星頁沒有 --fg,接 --ink(文章頁是淺底深字,寫死會白字白底) */
+  /* 鋪在 --hp-accent 上面的字色:預設的 accent 是亮天藍(深字才看得見),
+     但亮底主題會把 accent 換成深藍 —— 這時候要翻成白字,不然深藍底配近黑字整顆糊掉。 */
+  --hp-accent-fg: #06121f;
+  --hp-sel: #1e3a5f; --hp-selfg: #ffffff;   /* 全站「選中」色:深藍底白字,亮底暗底都夠對比 */
+  /* 身分色與警告色:深底用亮色。淺底(日間主題 / 生活頁的白天天空)要換深一階的同色系,
+     不然金黃、淺藍、淺綠鋪在白面上等於沒有字(Dominic 2026-08-20:「不可以只有特定顏色才看得到」)。
+     ⚠ 這幾個值不可以寫死在 JS 裡 —— 主題會變,JS 那次算出來的顏色不會跟著變。 */
+  --hp-tier-founder: #fbbf24; --hp-tier-vip: #f59e0b;
+  --hp-tier-member: #60a5fa; --hp-tier-friend: #34d399;
+  --hp-warn: #f87171;
+  --hp-ok: #4ade80;        /* 正向語意(順風/KPI good):淺底要深一階,見 [data-theme="light"] */
+  --hp-caution: #f59e0b;   /* 注意語意(TAF 變化/AI 免責):同上 */
+  /* 底列佔位高:內容頁用它墊底;全畫面頁縮把手時 hpeak-tab.js 會切到 --hp-tabbar-min */
+  --hp-tabbar-h: calc(52px + env(safe-area-inset-bottom, 0px));   /* 與 PeakLog 同規格 */
+  --hp-tabbar-min: 18px;
+}
+
+/* ── 底部主選單(= CrewSync .tab-bar) ── */
+.hp-tabbar { position: fixed; bottom: 0; left: 0; right: 0;
+  /* 安全區只留必要的量:整條 home indicator 都空著會多出一條厚底(Dominic 指出),
+     背景仍鋪到螢幕底部,內容則跨整條垂直置中 → 視覺上不再頭重腳輕 */
+  height: calc(52px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  /* 橫向時最左的分頁鈕、最右的版號(紅點在那顆上)會落到動態島底下 */
+  padding-left: var(--hp-sal, env(safe-area-inset-left, 0px)); padding-right: var(--hp-sar, env(safe-area-inset-right, 0px));
+  background: var(--hp-card); border-top: 1px solid var(--hp-dim); display: flex; align-items: center; z-index: 200;
+  overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  font-size: 16px;   /* 底列高度固定:字級開到 236% 時內容會被切,所以底列不跟根字級走(codex P2) */
+  transform: translateY(var(--hp-gap, 0px));   /* 自我校正:貼齊螢幕最底(見 hpeak-tab.js stickBottom) */
+  transition: none; }
+/* 動畫只給「收起成把手」用:位置校正若帶動畫,開頁時會看到底列從舊位置慢慢滑下去 */
+.hp-tabbar.hp-anim { transition: transform .25s ease; }
+.hp-tabbar::-webkit-scrollbar { display: none; }
+.hp-tab-btn { flex: 0 0 auto; min-width: 66px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  align-self: stretch;
+  gap: 1px; border: none; background: none; color: var(--hp-muted); font-size: .66em; font-weight: 600;
+  cursor: pointer; transition: color .15s; -webkit-appearance: none; padding: 0 8px; white-space: nowrap;
+  font-family: inherit; }
+/* 寬螢幕才平均鋪滿;手機維持固定寬 → 加了中英切換也不會被擠扁,而是可以左右滑 */
+@media (min-width: 600px) { .hp-tab-btn { flex: 1 1 0; min-width: 0; } }
+/* 選中狀態:只換文字顏色是不夠的 —— 圖示是 emoji,染不上色,結果只有那兩個小字變色,
+   使用者看不出自己在哪一格(Dominic 2026-08-20:「根本不高亮啊」)。
+   改成「底色膠囊 + 粗體 + 圖示放大一點」,三個訊號一起給。
+   ⚠ isolation:isolate 是必要的:膠囊用 ::before 畫在文字底下(z-index:-1),
+     沒有這個堆疊環境的話 -1 會掉到底列背景後面,整個看不見。 */
+.hp-tab-btn { position: relative; isolation: isolate; }
+.hp-tab-btn.hp-active { color: var(--hp-accent); font-weight: 800; }
+.hp-tab-btn.hp-active::before { content: ''; position: absolute; z-index: -1;
+  left: 5px; right: 5px; top: 5px; bottom: 5px; border-radius: 12px;
+  background: var(--hp-accent); opacity: .17; }
+.hp-tab-btn.hp-active .hp-tab-icon { transform: scale(1.1); }
+.hp-tab-icon { font-size: 1.32em; line-height: 1; transition: transform .15s; }
+
+/* util 區:日夜/字級/版號(PeakLog 版排法:橫向、間距鬆) */
+.hp-tab-util { flex: 0 0 auto; display: flex; flex-direction: row; align-items: center; gap: 8px; padding: 0 12px 0 6px; cursor: default; }
+/* 語言:與日夜同款的直立分段膠囊(中 / EN) */
+.hp-lang-seg { position: relative; display: inline-flex; flex-direction: column; box-sizing: border-box; width: 32px; height: 38px;
+  padding: 2px; border-radius: 5px; background: var(--hp-card); border: 1px solid var(--hp-dim); cursor: pointer; flex: 0 0 auto; }
+.hp-lang-knob { position: absolute; left: 2px; right: 2px; top: 2px; height: calc(50% - 2px); border-radius: 3px;
+  background: var(--hp-accent); transition: transform .22s ease; pointer-events: none; }
+.hp-lang-seg[data-lang="en"] .hp-lang-knob { transform: translateY(100%); }
+.hp-lang-opt { position: relative; z-index: 1; flex: 1; display: flex; align-items: center; justify-content: center;
+  background: none; border: 0; padding: 0; font-size: .62em; font-weight: 700; line-height: 1; cursor: pointer; color: var(--hp-fg); font-family: inherit; }
+/* 日夜:直立分段膠囊,☀️上/🌙下,浮標純 CSS 由 [data-theme] 驅動(CrewSync V9.5.24 規格) */
+.hp-theme-seg { position: relative; display: inline-flex; flex-direction: column; box-sizing: border-box; width: 32px; height: 38px;
+  padding: 2px; border-radius: 5px; background: var(--hp-card); border: 1px solid var(--hp-dim); cursor: pointer; flex: 0 0 auto; }
+.hp-theme-knob { position: absolute; left: 2px; right: 2px; top: 2px; height: calc(50% - 2px); border-radius: 3px;
+  background: var(--hp-accent); transition: transform .22s ease; pointer-events: none; transform: translateY(100%); }
+[data-theme="light"] .hp-theme-knob { transform: translateY(0); }
+/* 紅光鈕:浮在觀星頁右上的圓鈕,樣式就是 .hp-rbtn(地圖右邊那排);位置五頁固定=安全區下方 80px、貼右
+   (頂欄 57–67px 高,80 留一點空;星圖頁的右排 .barfns 也從這個點開始,紅光是第一顆) */
+.hp-red-fab { position: fixed; right: calc(12px + var(--hp-sar, env(safe-area-inset-right, 0px)));
+  top: calc(var(--hp-sat, env(safe-area-inset-top, 0px)) + 80px); z-index: 150;
+  font-size: 11px; font-weight: 700; letter-spacing: .02em; }
+/* 紅光模式:一層純紅蓋在最上面用 multiply 混合 —— 只留紅色通道,綠藍歸零,夜視不被破壞;
+   畫布(星圖)、插畫、文字全部一起變紅,不用逐頁改色。不用 filter 是因為 filter 掛在
+   html/body 上會把 position:fixed 的底列變成跟著內容捲。#d40000 順便壓掉約 17% 亮度。 */
+.hp-red-overlay { display: none; position: fixed; inset: 0; background: #d40000; mix-blend-mode: multiply;
+  pointer-events: none; z-index: 2147483647; }
+[data-red="1"] .hp-red-overlay { display: block; }
+.hp-theme-opt { position: relative; z-index: 1; flex: 1; display: flex; align-items: center; justify-content: center;
+  background: none; border: 0; padding: 0; font-size: .98em; line-height: 1; cursor: pointer; }
+/* 字級:單一實心方塊,A+ 上 / A− 下(CrewSync V9.5.26 規格) */
+.hp-font-wrap { box-sizing: border-box; display: flex; flex-direction: column; flex: 0 0 auto; width: 32px; height: 38px;
+  border: 1px solid var(--hp-dim); border-radius: 5px; overflow: hidden; background: var(--hp-card); gap: 0; }
+.hp-font-btn { flex: 1; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .78em;
+  line-height: 1; padding: 0; border: 0; border-radius: 0; background: none; color: var(--hp-muted); cursor: pointer; font-family: inherit; }
+.hp-font-btn:first-child { border-bottom: 1px solid var(--hp-dim); }
+/* 版號:小字、可點開更新日誌 */
+/* ⚠ 這裡曾經加過 `overscroll-behavior-y:none`(2026-09-21 bec418f),**已移除**。
+   它確實擋掉了回彈,但同時把「彈回去」也擋掉了 —— 原本生活頁被推下去會自己慢慢復原,
+   加了之後就卡在那裡不回來,反而讓兩個頁面都壞掉(Dominic 2026-09-22:「現在兩個頁面
+   點了之後都被推下去了」)。那條空白的真因是原生捲動區的 contentInset(見 build 45),
+   不是回彈,不要再從 CSS 這邊擋。 */
+
+.hp-ver { font-size: .58em; color: var(--hp-muted); line-height: 1.2; opacity: .75; cursor: pointer; text-decoration: underline;
+  white-space: nowrap; align-self: center; position: relative; }
+/* 🔴 觸控範圍撐到 44px。字本身只有 9px 高(底列容不下更大的字),但它是更新日誌唯一的入口 ——
+   實際可點高度 11px 遠低於自己定的 44px 標準。用 ::after 往外撐,不動版面也不動字級。 */
+/* ⚠ 左側不外擴:A+/A− 在版號**左邊**,left:-10px 會吃到它們 2px,
+   使用者按 A− 的邊緣會變成開更新日誌(codex P3)。往右外擴不影響任何東西。 */
+.hp-ver::after { content: ''; position: absolute; left: 0; right: -12px; top: 50%;
+  height: 44px; transform: translateY(-50%); }
+.hp-ver:focus-visible { outline: 2px solid var(--hp-accent); outline-offset: 3px; border-radius: 3px; }
+/* 站長回覆了、還沒看:版號上掛一顆紅點。
+   為什麼掛在這裡:私下回報的入口藏在「版號 → 更新日誌 → 私下回報」底下,
+   版號是這條路上唯一「每一頁都看得到」的東西。只跳一次提示是不夠的 ——
+   提示會消失,而紅點會一直在,直到他去看(Dominic 2026-09-10:
+   「不可能期待使用者每天去點選查看啊」)。
+   ⚠ 用 ::before —— ::after 已經被拿去撐 44px 觸控範圍了。 */
+.hp-ver.hp-sup-new::before { content: ''; position: absolute; top: -3px; right: -9px;
+  width: 8px; height: 8px; border-radius: 50%; background: #ef4444;
+  box-shadow: 0 0 0 2px var(--hp-bg); }
+.hp-ver.hp-sup-new { opacity: 1; }
+/* 更新日誌裡那顆「私下回報」上也要一顆,不然點進去還是要找 */
+.hp-supdot { display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  background: #ef4444; margin-left: 5px; vertical-align: middle; }
+/* 「載到的版本比伺服器舊」的提示色。
+   🔴 這個顏色以前是 JS 用 el.style.color 寫死的琥珀 —— 亮色主題底列會翻成白底,
+      琥珀鋪在白面上對比只有 2.1,等於看不到(2026-08-22 量到)。與 --hp-tier-* 同樣的道理:
+      顏色只要會隨主題變,就不可以寫在 JS 裡,JS 那次算出來的值不會跟著主題重算。 */
+.hp-ver.hp-stale, .hp-stale-note { color: #f59e0b; opacity: 1; }
+[data-theme="light"] .hp-ver.hp-stale, [data-theme="light"] .hp-stale-note { color: #92400e; }
+
+/* 全畫面頁退場:互動地圖/星圖時縮成把手(四小點),點一下或靜止一下浮回 */
+.hp-tabbar.hp-hide { transform: translateY(calc(var(--hp-gap, 0px) + 100% - var(--hp-tabbar-min) - env(safe-area-inset-bottom, 0px))); }
+.hp-handle { position: absolute; top: 0; left: 0; right: 0; height: var(--hp-tabbar-min); display: none;
+  align-items: center; justify-content: center; color: var(--hp-muted); font-size: 10px; letter-spacing: 3px;
+  cursor: pointer; user-select: none; -webkit-user-select: none; }
+.hp-tabbar.hp-hide .hp-handle { display: flex; }
+.hp-tabbar.hp-hide .hp-tab-btn, .hp-tabbar.hp-hide .hp-tab-util { visibility: hidden; }
+
+/* ── 離線徽章:頂端置中小標,不擋操作 ── */
+#hp-offline { position: fixed; top: calc(var(--hp-sat, env(safe-area-inset-top, 0px)) + 6px); left: 50%; transform: translateX(-50%);
+  z-index: 250; background: #b45309; color: #fff7ed; font-size: 12px; font-weight: 600; line-height: 1;
+  padding: 6px 12px; border-radius: 999px; box-shadow: 0 2px 8px rgba(0,0,0,.35); pointer-events: none; white-space: nowrap; }
+
+/* ── 頂部 submenu chip(= CrewSync .roster-subtab,含拖曳樣式) ── */
+.hp-subtabs { display: flex; align-items: center; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch;
+  overscroll-behavior: none; touch-action: manipulation; scrollbar-width: none;
+  flex-wrap: nowrap; }   /* 窄螢幕=橫向捲動,不折行(Dominic 拍板) */
+/* 特異度要壓過各頁自己的 .stabs{flex-wrap:wrap}(頁內 <style> 排在本檔之後) */
+nav.hp-subtabs { flex-wrap: nowrap; }
+.hp-subtabs::-webkit-scrollbar { display: none; }
+/* 寬螢幕:按鈕大小不變,彼此分散均分整條空間(= CrewSync ≥640px 規格)。
+   nav 前綴:特異度要壓過各頁 .stabs 的 gap(頁內 <style> 排在本檔之後) */
+@media (min-width: 640px) {
+  nav.hp-subtabs { flex: 1 1 auto; justify-content: space-evenly; gap: 0; overflow-x: visible; }
+}
+.hp-subtab { flex-shrink: 0; padding: 8px 10px; font-size: .84em; font-weight: 700;
+  background: linear-gradient(180deg, rgba(255,255,255,.08) 0%, rgba(255,255,255,.02) 100%);
+  border: 1px solid rgba(255,255,255,.1); border-bottom: 2px solid rgba(0,0,0,.3);
+  border-radius: 8px; color: var(--hp-muted); cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.08);
+  transition: color .2s, transform .1s, box-shadow .1s; -webkit-appearance: none; white-space: nowrap;
+  text-decoration: none; }
+.hp-subtab:active { transform: translateY(1px); box-shadow: 0 1px 2px rgba(0,0,0,.3); border-bottom-width: 1px; }
+.hp-subtab.hp-on, .hp-subtab[aria-current] { color: var(--hp-accent);
+  background: linear-gradient(180deg, rgba(59,130,246,.15) 0%, rgba(59,130,246,.05) 100%);
+  border-color: rgba(59,130,246,.3); box-shadow: 0 2px 6px rgba(59,130,246,.2), inset 0 1px 0 rgba(255,255,255,.1); }
+.hp-vlog-lang { padding: 3px 12px; border-radius: 6px; border: 1px solid var(--hp-dim);
+  background: transparent; color: var(--hp-muted); font-size: .8em; cursor: pointer; font-family: inherit; }
+.hp-vlog-lang.on { background: var(--hp-accent); color: var(--hp-accent-fg, #06121f); border-color: var(--hp-accent); font-weight: 700; }
+
+/* ── 帳號區(設定彈窗裡的 #hp-account-slot,元件在 hpeak-account.js) ── */
+.hp-acct-card { display: flex; flex-direction: column; gap: 7px; }
+.hp-acct-email { font-size: .84em; font-weight: 700; word-break: break-all; color: var(--hp-fg); }
+/* .72em 在 11px 上下,配上灰字對比不足(Dominic 2026-08-20 圈出來的那行)——
+   放大半級,顏色則由各頁的 --hp-muted 決定(生活頁已接到天空色板)。 */
+.hp-acct-via { font-size: .78em; color: var(--hp-muted); margin-top: -1px; }
+.hp-acct-tier { font-size: .92em; font-weight: 800; }
+.hp-acct-muted { font-size: .74em; color: var(--hp-muted); line-height: 1.6; }
+.hp-acct-msg { font-size: .74em; color: var(--hp-warn, #f87171); line-height: 1.5; min-height: 1em; }
+/* 付費牆上的那一格:沒訊息時不要佔位(牆本來就長),有訊息時置中、不用警告紅 */
+.hp-pw-msg { min-height: 0; text-align: center; margin: 8px 0 0; color: var(--hp-fg, #e2e8f0); }
+.hp-pw-msg:empty { display: none; }
+.hp-acct-btn { width: 100%; padding: 11px 12px; border: 1px solid var(--hp-dim); border-radius: 9px;
+  background: var(--hp-card); color: var(--hp-fg); font-size: .82em; font-weight: 700; cursor: pointer;
+  font-family: inherit; -webkit-appearance: none; }
+.hp-acct-btn:active { transform: translateY(1px); }
+/* Google 官方按鈕的容器:它自己畫一顆固定寬度的按鈕(我們指定寬度),置中對齊我們這排。
+   GIS 還沒載好之前,裡面是我們自製的那顆退路按鈕,滿版 —— 兩種狀態都不會破版。 */
+/* Google 官方按鈕的容器。按鈕是 Google 自己畫的(寬度由 JS 指定),我們只保證兩件事:
+   ① 永遠不會凸出卡片(overflow + 每一層 max-width)——量錯寬度時也不會破版
+   ② 高度跟我們自己那顆一致,兩顆並排看起來才是同一組 */
+.hp-acct-gh { display: flex; justify-content: center; margin-bottom: 8px; overflow: hidden; }
+.hp-acct-gh > *, .hp-acct-gh iframe { max-width: 100%; }
+.hp-acct-btn { min-height: 40px; }
+/* PeakLog 那顆是主要入口(家族產品的自己人路徑),視覺上要比另外兩顆明顯 */
+.hp-acct-pl { background: var(--hp-accent); border-color: var(--hp-accent); color: var(--hp-accent-fg, #06121f); }
+.hp-legal-slot:empty { display: none; }
+.hp-acct-legal { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; padding-top: 12px;
+  border-top: 1px solid var(--hp-dim); font-size: .72em; }
+.hp-acct-legal a { color: var(--hp-accent); text-decoration: none; }
+.hp-acct-agree { font-size: .68em; color: var(--hp-muted); line-height: 1.65; margin-top: 2px; }
+.hp-acct-agree a { color: var(--hp-accent); text-decoration: underline; }
+/* 登出與刪除帳號同一排:登出是常用動作,給它按鈕的份量;刪除帳號推到最右邊、灰字,
+   找得到但不搶眼 —— 原本兩個都是一行小字、而刪除還是紅的,結果最顯眼的是最不該按的那顆。
+   登出也不可以用 .hp-acct-btn(那是登入用的滿版樣式,一顆黑色大方塊很嚇人)。 */
+/* email 那一列:看起來就是可以點的(有 ▾),點開才露出登出/刪除 */
+.hp-acct-id { display: flex; align-items: center; gap: 6px; width: 100%; padding: 7px 9px;
+  margin: 0 -9px; border: 0; border-radius: 9px; background: none; color: var(--hp-fg);
+  font: inherit; font-size: .82em; font-weight: 600; cursor: pointer; text-align: left; }
+.hp-acct-id span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hp-acct-id i { flex: 0 0 auto; font-style: normal; font-size: .8em; opacity: .6; transition: transform .15s; }
+.hp-acct-id.on { background: var(--hp-dim); }
+.hp-acct-id.on i { transform: rotate(180deg); }
+.hp-acct-actions[hidden] { display: none; }
+.hp-acct-actions { display: flex; align-items: center; gap: 14px; margin-top: 8px; }
+/* 🔴 刪除帳號的警語跟兩顆按鈕在同一個 flex 容器裡(它必須在 hidden 區內才不會提早露出),
+   所以要讓它自己獨佔一列 —— 不然在手機上會被擠成又窄又高的一條(codex P3)。 */
+.hp-acct-actions { flex-wrap: wrap; }
+.hp-acct-actions > .hp-acct-muted { flex: 1 0 100%; margin-top: 2px; }
+.hp-acct-out { flex: 0 0 auto; padding: 8px 20px; border: 1px solid var(--hp-dim); border-radius: 9px;
+  background: var(--hp-card); color: var(--hp-fg); font-size: .78em; font-weight: 700;
+  cursor: pointer; font-family: inherit; -webkit-appearance: none; }
+/* 🔴 刪除帳號一定是紅的 —— 紅色是「這個動作收不回來」的提示,不可以為了跟旁邊的登出鈕
+   長得一致就拿掉(V1.4.42 收進同一排時被我改成 muted,Dominic 2026-08-22 抓到)。
+   用 --hp-warn 不要寫死:亮底(亮色主題 / 生活頁的白天天空)要換成深一階的紅才看得清。 */
+.hp-acct-del { margin-left: auto; background: none; border: 0; padding: 4px 0; color: var(--hp-warn, #f87171);
+  font-size: .74em; text-decoration: underline; cursor: pointer; font-family: inherit; }
+.hp-acct-link { align-self: flex-start; background: none; border: 0; padding: 4px 0;
+  color: var(--hp-muted); font-size: .76em; text-decoration: underline; cursor: pointer; font-family: inherit; }
+
+.hp-grip { opacity: .5; margin-right: 4px; font-size: .9em; letter-spacing: -1px; touch-action: none; }
+.hp-subtab-dragging { z-index: 999; position: relative; transform: scale(1.15);
+  box-shadow: 0 4px 16px rgba(59,130,246,.45); background: var(--hp-card); transition: transform .15s; }
+.hp-subtab-dragging .hp-grip { opacity: .9; }
+
+/* ── 圓形浮動控制鈕(航空/觀星/生活三頁共用) ────────────────────────────────
+   Dominic 2026-08-19 拍板:照 Apple 天氣地圖那組做 —— 直排圓鈕、圖層用堆疊、定位用箭頭。
+   ⚠ 圖示一律自己畫的 SVG,不得用 SF Symbols —— 那份授權只允許 Apple 平台的 App,
+     明文不得用於網頁,而我們的介面是網頁與 App 共用同一份。
+   三頁的形狀集中在這裡,圖示各頁內嵌(只有三個小 path,不值得為它多一支載入相依)。 */
+.hp-rbtn { width: 42px; height: 42px; border-radius: 50%; border: 1px solid #ffffff26; padding: 0;
+  background: #0d1526cc; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  /* 🔴 底色是**寫死的深玻璃**,所以字色也必須寫死 —— 讀 --hp-fg 會出事:
+     生活頁把 --hp-fg 接到天空色板之後,白天天空會把它變成深色,深字鋪在深玻璃上等於沒有圖示
+     (codex P1;同樣的理由 #map-placelist 早就把字色釘成淺色了)。
+     只有 [data-theme="light"] 那條會連背景一起翻成亮的,字色也在那裡一起換。 */
+  color: #e8eef7; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex: 0 0 auto; font: 700 12px ui-monospace, Menlo, monospace;
+  box-shadow: 0 2px 10px #0006; -webkit-appearance: none; appearance: none; }
+.hp-rbtn:active { transform: scale(.94); }
+/* 🔴 這個 App 的深色是「沒有 data-theme 屬性」,不是 data-theme="dark"
+   (hpeak-tab.js setTheme:亮色設 light、深色直接 delete 屬性)。
+   所以預設就要寫深色,只有 [data-theme="light"] 才翻成亮色 ——
+   寫成 :root:not([data-theme="dark"]) 的話深色狀態也會中,結果夜空上三顆白圓鈕
+   (2026-08-19 覆核在 /sky/map 量到 background rgba(255,255,255,.85))。
+   ⚠ 不要加 prefers-color-scheme 的媒體查詢:主題由 App 自己管,跟著系統走會跟膠囊打架。 */
+[data-theme="light"] .hp-rbtn { background: #ffffffd9; border-color: #00000014; color: #111; }
+/* 生活頁的天空色板跟 data-theme 無關:auto(無屬性)+白天天空時,亮天空上仍是三顆深玻璃鈕
+   (A3 盤查 A2 條,「淺色底冒出深色塊」的本體)。跟著 data-sky 翻亮,值與上一條同一組;
+   :where 把特異度壓到 (0,1,0) —— 排在基礎規則後贏它,又輸給 .on/[aria-*] 的選中態(:root+class+attr=0,3,0),
+   選中時照樣是深藍底白字,亮暗天空都夠對比。 */
+:where(#wx-page[data-sky^="day"], #wx-page[data-sky^="dusk"]) .hp-rbtn {
+  background: #ffffffd9; border-color: #00000014; color: #111; }
+/* 「開著」的狀態要贏過上面那條亮色規則(0,2,0),所以綁在 :root 上湊到 0,3,0 */
+:root .hp-rbtn[aria-pressed="true"], :root .hp-rbtn[aria-expanded="true"], :root .hp-rbtn.on {
+  background: #1e3a5fe6; border-color: #ffffff66; color: #fff; }
+/* ── 付費牆(JETSTREAM_PAYWALL=1 才會出現) ───────────────────────────────── */
+/* 付費牆的「買到什麼」清單與自動續訂條款(Guideline 3.1.2 要求出現在購買畫面本身) */
+.hp-pw-list { list-style: none; margin: 12px 0 10px; padding: 0; text-align: left; }
+.hp-pw-list li { position: relative; padding: 3px 0 3px 20px; font-size: .86rem; color: var(--hp-fg); line-height: 1.5; }
+.hp-pw-list li::before { content: "✓"; position: absolute; left: 0; color: var(--hp-ok, #4ade80); font-weight: 700; }
+.hp-pw-terms { font-size: .72rem; line-height: 1.55; color: var(--hp-muted); text-align: left; margin: 4px 0 12px; }
+/* 預覽模式的常駐橫幅(owner 驗收用):每一頁都在,隨時退得掉 */
+/* 預覽到期狀態那條橫幅的樣式,連同整套預覽模式在 V2.4.0 移除(見 hpeak-account.js) */
+
+/* 頁面級鎖(地圖/AI 簡報/互動星圖):蓋一張說明卡,底下畫面照常在 */
+#hp-gate { position:fixed; inset:0; z-index:8999; display:flex; align-items:center; justify-content:center;
+  /* ⚠ 安全區併進簡寫:另外寫 padding-left/right 會被後面這個簡寫蓋掉 */
+  padding:20px calc(20px + var(--hp-sar, env(safe-area-inset-right, 0px))) 20px calc(20px + var(--hp-sal, env(safe-area-inset-left, 0px)));
+  background:rgba(4,10,22,.72); backdrop-filter:blur(3px); }
+/* 🔴 內容加長之後(3.1.2 要求的權益清單+續訂條款)小螢幕會上下都被裁掉,
+   購買鈕與 Terms/Privacy 連結變成點不到(codex P1)。整面可捲 + 卡片上下 auto 置中。 */
+#hp-paywall { position: fixed; inset: 0; z-index: 9000; display: flex; align-items: flex-start;
+  justify-content: center; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  /* ⚠ 安全區併進簡寫,不要另外寫 longhand(會被它蓋掉) */
+  padding: max(24px, env(safe-area-inset-top)) calc(20px + var(--hp-sar, env(safe-area-inset-right, 0px)))
+           max(24px, calc(env(safe-area-inset-bottom) + 12px)) calc(20px + var(--hp-sal, env(safe-area-inset-left, 0px)));
+  background: color-mix(in srgb, var(--bg, #0b1220) 88%, transparent);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+#hp-paywall .hp-pw-card { margin: auto 0; }
+.hp-pw-card { width: min(420px, 92vw); background: var(--hp-card); color: var(--hp-fg);
+  border: 1px solid var(--hp-dim); border-radius: 18px; padding: 26px 22px; text-align: center; }
+.hp-pw-t { font-size: 1.25rem; font-weight: 800; }
+.hp-pw-s { color: var(--hp-muted); font-size: .9rem; margin-top: 6px; }
+.hp-pw-price { margin: 18px 0; padding: 14px; border: 1px solid var(--hp-dim); border-radius: 14px; }
+.hp-pw-price b { display: block; font-size: 1.1rem; }
+.hp-pw-price span { font-size: 1.5rem; font-weight: 800; }
+.hp-pw-price small { display: block; color: var(--hp-muted); margin-top: 4px; }
+/* 價格還沒從 StoreKit 回來時的替代說明 —— 不是價格,所以不能長得像價格 */
+.hp-pw-priceoff { display: block; font-style: normal; font-size: .9rem;
+  color: var(--hp-muted); line-height: 1.5; margin-top: 2px; }
+.hp-pw-btn { width: 100%; min-height: 48px; border: 0; border-radius: 12px;
+  background: var(--hp-accent); color: var(--hp-accent-fg, #06121f); font: 700 1rem inherit; cursor: pointer; }
+.hp-pw-note { color: var(--hp-muted); font-size: .88rem; line-height: 1.6; }
+/* 鎖頁上的免費出口:次要動作,外框式,跟主 CTA 分得開 */
+.hp-gate-free { margin-top: 10px; background: none !important;
+  border: 1px solid var(--hp-line, rgba(127,127,127,.35)) !important;
+  color: var(--hp-fg) !important; }
+.hp-pw-foot { margin-top: 16px; font-size: .78rem; color: var(--hp-muted); }
+.hp-pw-foot a { color: var(--hp-muted); }
+/* 設定裡常駐的「還原購買」:次要動作,所以是外框不是實心,但一樣要 44px 好按 */
+.hp-acct-restore { display: block; width: 100%; margin-top: 8px; min-height: 44px;
+  border: 1px solid var(--hp-line, rgba(127,127,127,.35)); border-radius: 10px;
+  background: none; color: var(--hp-fg); font: 600 .9rem inherit; cursor: pointer; }
+.hp-acct-sub { display: block; width: 100%; margin-top: 8px; min-height: 40px; border: 0;
+  border-radius: 10px; background: var(--hp-accent); color: var(--hp-accent-fg, #06121f);
+  font: 700 .9rem inherit; cursor: pointer; }
+.hp-pw-x { position: absolute; top: 10px; right: 12px; border: 0; background: none;
+  color: var(--hp-muted); font-size: 1.1rem; cursor: pointer; padding: 6px; }
+.hp-pw-card { position: relative; }
+.hp-pw-link { border: 0; background: none; color: var(--hp-muted); font: inherit; font-size: .78rem;
+  text-decoration: underline; cursor: pointer; padding: 0; }
+/* 審查用的隱藏登入:長按那一行要先關掉系統的選字/放大鏡,不然手勢走不完 */
+/* 帳號區的 App 圖示。審查用的隱藏登入長按的就是它(比照 PeakLog)——
+   長按要先關掉系統的選字/放大鏡/拖曳圖片,還有捲動手勢,不然手勢走不完。 */
+.hp-acct-brand { display: flex; justify-content: center; margin-bottom: 12px; }
+.hp-acct-brand img {
+  width: 52px; height: 52px; border-radius: 12px; display: block;
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+  touch-action: none; -webkit-user-drag: none;
+}
+.hp-rev-form { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.hp-rev-form input { min-height: 40px; padding: 0 10px; border-radius: 10px;
+  border: 1px solid rgba(127,127,127,.4); background: rgba(127,127,127,.08);
+  color: var(--hp-fg); font: inherit; }
+/* 還原購買:是一個真的要按得到的動作,不能跟頁尾的小字連結一樣細
+   (手指目標至少 44px 高 —— 審查員也是用手指找這一顆)。 */
+.hp-pw-restore { display: block; width: 100%; margin-top: 12px; min-height: 44px;
+  border: 1px solid var(--hp-line, rgba(127,127,127,.35)); border-radius: 12px;
+  color: var(--hp-fg); font-size: .92rem; text-decoration: none; }
+
+/* 邀請碼輸入(帳號區與付費牆共用同一個元件)。
+   ⚠ 顏色一律走變數:這個檔案的教訓是「背景寫死 → 字色也要寫死」,
+     兩邊都用變數才不會在自動主題下變成同色相疊。 */
+.hp-rd { margin-top: 12px; text-align: left; }
+.hp-rd-l { display: block; font-size: .8rem; color: var(--hp-muted); }
+.hp-rd-l .hp-rd-row { margin-top: 5px; }
+.hp-rd-row { display: flex; gap: 8px; }
+.hp-rd-in { flex: 1 1 auto; min-width: 0; min-height: 44px; padding: 0 10px;
+  border: 1px solid var(--hp-line, rgba(127,127,127,.35)); border-radius: 12px;
+  background: var(--hp-card, transparent); color: var(--hp-fg);
+  font: 1rem/1 ui-monospace, Menlo, monospace; letter-spacing: .5px; text-transform: uppercase; }
+.hp-rd-btn { flex: 0 0 auto; min-height: 44px; padding: 0 16px;
+  border: 1px solid var(--hp-line, rgba(127,127,127,.35)); border-radius: 12px;
+  background: transparent; color: var(--hp-fg); font-size: .92rem; cursor: pointer; }
+.hp-rd-btn:disabled { opacity: .5; cursor: default; }
+/* 信箱欄位:沿用上面那組版面,但 .hp-rd-in 的字型是給「代碼」設計的(等寬、加字距、
+   強制大寫),放 email 會變成 YOU@STARLUX-AIRLINES.COM,而且長一點的公司信箱會被切掉。
+   ⚠ text-transform 只影響顯示,送出去的值不變 —— 但使用者看到的是被改過的樣子,
+     會以為自己打錯或系統壞了。 */
+.hp-rd-in.hp-rd-email { font: .92rem/1 -apple-system, system-ui, sans-serif;
+  letter-spacing: 0; text-transform: none; }
+/* 公司信箱常常很長,按鈕一擠就把輸入框壓到看不完整 → 放不下就讓按鈕自己換一行。
+   ⚠ 刻意**不用** @media:斷點是看螢幕寬,但這一格可能被放在窄的側欄或設定面板裡,
+     那時螢幕很寬、格子很窄,媒體查詢完全幫不上忙。給輸入框一個最小寬度,
+     讓 flex 自己決定擠不擠得下,任何容器寬度都正確。 */
+.hp-rd-row.hp-rd-stack { flex-wrap: wrap; }
+.hp-rd-row.hp-rd-stack .hp-rd-in { flex: 1 1 14rem; }
+.hp-rd-row.hp-rd-stack .hp-rd-btn { flex: 1 0 auto; }
+.hp-rd-msg:empty { display: none; }
+.hp-rd-msg { margin-top: 6px; font-size: .8rem; color: var(--hp-muted); line-height: 1.45; }
+.hp-rd-msg.ok { color: var(--hp-ok, #4ade80); }
+.hp-rd-msg.err { color: var(--hp-warn, #f87171); }
+
+/* 登入方式清單(多綁)。一列一個信箱:信箱吃剩下的寬度、來源與「解除」不縮。
+   ⚠ 信箱會很長(公司信箱尤其),一定要給 min-width:0 + 斷字,
+     不然 flex 子項的預設 min-width:auto 會把整列撐出卡片外。 */
+.hp-lg-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.hp-lg-em { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere;
+  font-size: .92rem; color: var(--hp-fg); }
+.hp-lg-via { flex: 0 0 auto; font-size: .74rem; color: var(--hp-muted);
+  border: 1px solid var(--hp-line, rgba(127,127,127,.35)); border-radius: 999px; padding: 1px 7px; }
+.hp-lg-x { flex: 0 0 auto; min-height: 32px; padding: 0 10px;
+  border: 1px solid var(--hp-line, rgba(127,127,127,.35)); border-radius: 10px;
+  background: transparent; color: var(--hp-muted); font-size: .8rem; cursor: pointer; }
+.hp-lg-x:disabled { opacity: .5; cursor: default; }
+.hp-lg-msg:empty { display: none; }
+/* 「綁定其他帳號」按下去才出現的選單。跟上面那顆對齊,不要另起一種版面。 */
+.hp-lg-pick { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.hp-lg-pick[hidden] { display: none; }
+.hp-lg-pick .hp-rd-btn { flex: 1 0 auto; }
+
+/* 直排一組(地圖右上角) */
+.hp-rstack { display: flex; flex-direction: column; gap: 8px; }
+
+/* 淺底時的身分色/警告色(同色系深一階)。三個入口:明選日間、觀星頁跟系統走、生活頁白天天空。 */
+[data-theme="light"] {
+  --hp-accent-fg: #ffffff;
+  --hp-tier-founder: #a16207; --hp-tier-vip: #b45309;
+  --hp-tier-member: #1d4ed8; --hp-tier-friend: #047857;
+  --hp-warn: #b91c1c;
+  --hp-ok: #15803d;
+  --hp-caution: #92400e;
+}
+
+/* 付費牆的第二個選項(買斷)。分隔線讓兩種方案不會黏成一塊。 */
+.hp-pw-or { display:flex; align-items:center; gap:10px; margin:16px 0 10px;
+  font-size:.8rem; opacity:.6; }
+.hp-pw-or::before, .hp-pw-or::after { content:''; flex:1; height:1px; background:currentColor; opacity:.25; }
+/* 🔴 次要按鈕的顏色**一定要跟著主題走**。踩過兩次:
+     第一版 `border:1px solid currentColor` → 深色底上等於隱形;
+     第二版寫死白字白底 → 但付費牆不是永遠深色(.hp-pw-card 吃 --hp-card,
+     白天主題是 #fff),白天就變成白底白字,對比約 1:1(codex P1)。
+   它是**購買鈕**,任何主題下都必須一眼看得出可以按。 */
+.hp-pw-btn2 { background:color-mix(in srgb, var(--hp-fg) 14%, transparent);
+  color:var(--hp-fg);
+  border:1px solid color-mix(in srgb, var(--hp-fg) 45%, transparent); }
+
+/* ── 付費牆的商品卡(V2.4.0:四個商品並列,沒有資格分支)────────────────────── */
+.hp-pw-opts { display: flex; flex-direction: column; gap: 10px; margin: 14px 0 4px; }
+.hp-pw-opt { border: 1px solid var(--hp-dim); border-radius: 14px; padding: 12px 14px; text-align: left; }
+/* 最划算那一張稍微亮一點就好 —— 四張卡都描邊加陰影的話,層次會整個平掉 */
+.hp-pw-opt.hp-pw-best { border-color: var(--hp-info, #60a5fa); }
+.hp-pw-optt { font-size: .95rem; font-weight: 700; }
+.hp-pw-optp { font-size: 1.35rem; font-weight: 800; margin: 2px 0 6px; font-variant-numeric: tabular-nums; }
+.hp-pw-optn { font-size: .76rem; color: var(--hp-muted); line-height: 1.5; margin-bottom: 8px; }
+.hp-pw-opt .hp-pw-btn { margin: 0; }
+/* 餘額:兩個桶子分開講,合成一個數字使用者看不懂自己還有多少 */
+.hp-pw-bal { font-size: .8rem; color: var(--hp-muted); line-height: 1.6; margin: 10px 0 2px; }
+/* 「只有這一項需要額度」:安撫用的小字,不是賣點,所以刻意壓得比條款還低調 */
+.hp-pw-only { font-size: .76rem; color: var(--hp-muted); text-align: center; margin: 12px 0 2px; line-height: 1.5; }

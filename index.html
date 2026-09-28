@@ -13,7 +13,8 @@
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="stylesheet" href="vendor/leaflet.css">
-<link rel="stylesheet" href="app.css?v=20260928105601">
+<link rel="stylesheet" href="vendor/hpeak-ui.css">
+<link rel="stylesheet" href="app.css?v=20260928110111">
 </head>
 <body>
 <div id="app">
@@ -88,18 +89,27 @@
     <div class="pagebody"><div id="setBody"></div></div>
   </section>
 
-  <!-- ══ 底部主選單(家族規格) ══ -->
-  <nav id="tabbar" class="tabbar" role="tablist">
-    <button class="tab on" data-tab="near"  role="tab"><span class="ti">🅿️</span><span class="tl">附近</span></button>
-    <button class="tab"    data-tab="search" role="tab"><span class="ti">🔍</span><span class="tl">搜尋</span></button>
-    <button class="tab"    data-tab="fav"   role="tab"><span class="ti">⭐</span><span class="tl">常用</span></button>
-    <button class="tab"    data-tab="set"   role="tab"><span class="ti">⚙️</span><span class="tl">設定</span></button>
-    <div class="util">
-      <button id="langBtn" class="upill" aria-label="語言">中</button>
-      <button id="themeBtn" class="upill" aria-label="日夜切換">◐</button>
-      <button id="fontDn" class="upill" aria-label="縮小字級">A−</button>
-      <button id="fontUp" class="upill" aria-label="放大字級">A+</button>
-      <button id="verBtn" class="upill ver" aria-label="版本">—</button>
+  <!-- ══ 底部主選單:DOM 與 class 照抄 jetstream/public/hpeak-tab.js,樣式吃 vendor/hpeak-ui.css ══ -->
+  <nav class="hp-tabbar" id="hp-tabbar">
+    <button type="button" class="hp-tab-btn hp-active" data-hp="near"><span class="hp-tab-icon">🅿️</span>附近</button>
+    <button type="button" class="hp-tab-btn" data-hp="search"><span class="hp-tab-icon">🔍</span>搜尋</button>
+    <button type="button" class="hp-tab-btn" data-hp="fav"><span class="hp-tab-icon">⭐</span>常用</button>
+    <button type="button" class="hp-tab-btn" data-hp="set"><span class="hp-tab-icon">⚙️</span>設定</button>
+    <div class="hp-tab-util">
+      <div class="hp-lang-seg" id="hp-lang" data-lang="zh" title="中文 / English">
+        <span class="hp-lang-knob"></span>
+        <button type="button" class="hp-lang-opt" data-lg="zh">中</button>
+        <button type="button" class="hp-lang-opt" data-lg="en">EN</button>
+      </div>
+      <div class="hp-theme-seg" title="日 / 夜"><span class="hp-theme-knob"></span>
+        <button type="button" class="hp-theme-opt" data-th="light" aria-label="日間 Day">☀️</button>
+        <button type="button" class="hp-theme-opt" data-th="dark" aria-label="夜間 Night">🌙</button>
+      </div>
+      <div class="hp-font-wrap">
+        <button type="button" class="hp-font-btn" data-fd="1">A+</button>
+        <button type="button" class="hp-font-btn" data-fd="-1">A−</button>
+      </div>
+      <span class="hp-ver" id="hp-ver" role="button" tabindex="0"></span>
     </div>
   </nav>
 
@@ -115,6 +125,6 @@
 </div>
 
 <script src="vendor/leaflet.js"></script>
-<script src="app.js?v=20260928105601"></script>
+<script src="app.js?v=20260928110111"></script>
 </body>
 </html>

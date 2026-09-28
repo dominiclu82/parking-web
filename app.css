@@ -1,17 +1,23 @@
+/* 色票對映到家族的 --panel/--line/--muted/--accent/--fg(vendor/hpeak-ui.css 吃這幾個)。
+   🔴 家族的預設是「深色」,[data-theme="light"] 才是亮色 —— 日夜膠囊的浮標就靠這個驅動,
+      反過來寫的話浮標會停在錯的一邊。 */
 :root{
-  --ink:#141a21; --ink-2:#4d5762; --ink-3:#818b95;
-  --bg:#ffffff; --bg-2:#f2f1ed; --line:#dedcd6;
-  --sign:#0b5cab; --free:#12803c; --tight:#b45309; --full:#a8342b; --unknown:#8a8f96;
+  --panel:#171c22; --line:#2b333c; --muted:#8b98a9; --accent:#5da9eb; --fg:#e9eae7;
+  --ink:#e9eae7; --ink-2:#aab1b8; --ink-3:#7d858d;
+  --bg:#171c22; --bg-2:#0f1319;
+  --sign:#5da9eb; --free:#5fc27e; --tight:#e0a052; --full:#e0736a; --unknown:#8a8f96;
   --mark:#e0a92b;
   --sat:env(safe-area-inset-top,0px);
   --sab:env(safe-area-inset-bottom,0px);
   --sans:-apple-system,"Noto Sans TC","PingFang TC",system-ui,sans-serif;
+  --tabh:calc(52px + env(safe-area-inset-bottom,0px));
 }
-@media (prefers-color-scheme:dark){:root{
-  --ink:#e9eae7; --ink-2:#aab1b8; --ink-3:#7d858d;
-  --bg:#171c22; --bg-2:#0f1319; --line:#2b333c;
-  --sign:#6aa9e6; --free:#5fc27e; --tight:#e0a052; --full:#e0736a; --unknown:#8a8f96;
-}}
+:root[data-theme="light"]{
+  --panel:#ffffff; --line:#dedcd6; --muted:#818b95; --accent:#0b5cab; --fg:#141a21;
+  --ink:#141a21; --ink-2:#4d5762; --ink-3:#818b95;
+  --bg:#ffffff; --bg-2:#f2f1ed;
+  --sign:#0b5cab; --free:#12803c; --tight:#b45309; --full:#a8342b; --unknown:#8a8f96;
+}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;margin:0;overscroll-behavior:none}
 body{font-family:var(--sans);color:var(--ink);background:var(--bg-2);
@@ -19,7 +25,7 @@ body{font-family:var(--sans);color:var(--ink);background:var(--bg-2);
 /* 🔴 Safari 的 position:fixed;inset:0,「底」在瀏覽器工具列底下 ——
    底部主選單與浮層下半部會整個看不到。dvh 會跟著工具列伸縮。 */
 #app{position:fixed;left:0;right:0;top:0;height:100vh;height:100dvh}
-.pane{position:absolute;inset:0;bottom:var(--tabh);display:none;flex-direction:column;background:var(--bg-2)}
+.pane{position:absolute;inset:0;bottom:var(--hp-tabbar-h,calc(52px + env(safe-area-inset-bottom,0px)));display:none;flex-direction:column;background:var(--bg-2)}
 .pane.on{display:flex}
 #pane-near{background:var(--bg-2)}
 .pagehead{padding:calc(var(--sat) + 14px) 16px 10px;background:var(--bg);border-bottom:1px solid var(--line)}
@@ -27,31 +33,20 @@ body{font-family:var(--sans);color:var(--ink);background:var(--bg-2);
 .pagebody{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 16px 20px}
 
 /* ── 底部主選單(家族規格:util 也放這裡,不收在齒輪) ── */
-:root{--tabh:calc(58px + env(safe-area-inset-bottom,0px))}
-.tabbar{position:absolute;left:0;right:0;bottom:0;z-index:900;
-  height:var(--tabh);padding-bottom:env(safe-area-inset-bottom,0px);
-  background:var(--bg);border-top:1px solid var(--line);
-  display:flex;align-items:stretch;
-  /* 🔴 寫死 16px:跟著根字級放大會把 58px 的底列內容切掉(Jetstream 踩過) */
-  font-size:16px;
-  transition:transform .22s ease}
-.tabbar.hidden{transform:translateY(100%)}
-.tab{flex:1;min-width:0;border:0;background:transparent;color:var(--ink-3);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;padding:0}
-.tab .ti{font-size:19px;line-height:1}
-.tab .tl{font-size:10.5px;font-weight:600;letter-spacing:.02em}
-.tab.on{color:var(--sign)}
-.util{flex:0 0 auto;display:flex;align-items:center;gap:5px;padding:0 9px 0 4px;border-left:1px solid var(--line)}
-.upill{border:1px solid var(--line);background:var(--bg-2);color:var(--ink-2);
-  border-radius:20px;font-size:11px;padding:5px 7px;cursor:pointer;line-height:1;white-space:nowrap}
-.util{gap:4px;padding:0 7px 0 4px}
-.upill.ver{font-size:10px;font-variant-numeric:tabular-nums}
+
+
+
+
+
+
+
+
+
+
+
 /* 操作地圖時底列縮成把手,閒置 2.5 秒浮回(家族做法) */
-.tabhandle{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(6px + env(safe-area-inset-bottom,0px));
-  z-index:901;width:74px;height:22px;border-radius:12px;border:1px solid var(--line);
-  background:var(--bg);opacity:.9;cursor:pointer;box-shadow:0 1px 5px rgba(0,0,0,.2)}
-.tabhandle::after{content:'';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-  width:32px;height:3.5px;border-radius:2px;background:var(--ink-3)}
+
+
 
 /* ── 搜尋 / 常用 / 設定 ── */
 .qinput{width:100%;font-size:16px;padding:12px 14px;border-radius:11px;
@@ -170,7 +165,7 @@ body{font-family:var(--sans);color:var(--ink);background:var(--bg-2);
 .row .rd{font-size:11px;color:var(--ink-3)}
 .empty{padding:34px 20px;text-align:center;color:var(--ink-3);font-size:13.5px;line-height:1.7}
 
-.legend{position:absolute;left:10px;bottom:88px;z-index:620;
+.legend{position:absolute;left:10px;bottom:84px;z-index:620;
   display:flex;gap:9px;align-items:center;background:var(--bg);opacity:.93;
   border:1px solid var(--line);border-radius:8px;padding:5px 9px;
   font-size:10.5px;color:var(--ink-2);pointer-events:none;box-shadow:0 1px 4px rgba(0,0,0,.12)}

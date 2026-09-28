@@ -413,8 +413,8 @@
       var pane = $('pane-' + k);
       if (pane) pane.classList.toggle('on', k === t);
     });
-    document.querySelectorAll('.tab').forEach(function (b) {
-      b.classList.toggle('on', b.dataset.tab === t);
+    document.querySelectorAll('.hp-tab-btn').forEach(function (b) {
+      b.classList.toggle('hp-active', b.dataset.hp === t);
     });
     showTabbar();                       // 換頁一定要看得到選單
     if (t === 'near' && map) setTimeout(function () { map.invalidateSize(); }, 60);
@@ -424,10 +424,7 @@
 
   // ---------- 底列:操作地圖時縮成把手,閒置 2.5 秒浮回 ----------
   var tabIdle = null;
-  function showTabbar() {
-    $('tabbar').classList.remove('hidden');
-    clearTimeout(tabIdle);
-  }
+  function showTabbar() { /* 底列固定顯示,不收合 */ }
   /* 🔴 刻意不做「操作地圖時收合底列」。Jetstream 那個做法是給次要的全畫面頁用的;
      這個 App 的主畫面就是地圖,一動就收等於版號永遠看不到(Dominic 2026-09-28)。 */
 
@@ -567,18 +564,14 @@
 
   // ---------- 日夜 ----------
   function applyTheme(t) {
-    if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+    /* 家族規格:預設深色,只有 [data-theme="light"] 是亮色 —— 日夜膠囊的浮標
+       (.hp-theme-knob)就是靠這個屬性驅動,寫成三段式浮標會停在錯的地方。 */
+    var v = (t === 'light') ? 'light' : 'dark';
+    if (v === 'light') document.documentElement.setAttribute('data-theme', 'light');
     else document.documentElement.removeAttribute('data-theme');
-    lsSet(LS.theme, t);
-    var b = $('themeBtn');
-    if (b) b.textContent = t === 'dark' ? '☾' : t === 'light' ? '☀︎' : '◐';
-  }
-  function cycleTheme() {
-    var cur = lsGet(LS.theme) || 'auto';
-    applyTheme(cur === 'auto' ? 'light' : cur === 'light' ? 'dark' : 'auto');
+    lsSet(LS.theme, v);
     if (map) setTimeout(function () { refreshPins(); }, 30);
   }
-
 
   // ---------- 中英 ----------
   var I18N = {
@@ -647,10 +640,13 @@
     lang = (l === 'en') ? 'en' : 'zh';
     lsSet(LS.lang, lang);
     document.documentElement.lang = lang === 'en' ? 'en' : 'zh-Hant';
-    var B = $('langBtn'); if (B) B.textContent = lang === 'en' ? 'EN' : '中';
-    // 底列
-    document.querySelectorAll('.tab').forEach(function (b) {
-      var l2 = b.querySelector('.tl'); if (l2) l2.textContent = t(b.dataset.tab);
+    var seg = $('hp-lang'); if (seg) seg.setAttribute('data-lang', lang);
+    // 底列分頁文字:icon 那個 span 留著,只換後面的文字節點
+    document.querySelectorAll('.hp-tab-btn').forEach(function (b) {
+      var ic = b.querySelector('.hp-tab-icon');
+      b.textContent = '';
+      if (ic) b.appendChild(ic);
+      b.appendChild(document.createTextNode(t(b.dataset.hp)));
     });
     // 標題
     var map2 = { 'pane-search': 'search', 'pane-fav': 'fav', 'pane-set': 'set' };
@@ -692,6 +688,187 @@
     if (map) setTimeout(function () { map.invalidateSize(); }, 60);
   }
   function fontIdx() { return parseInt(lsGet(LS.font) || '1', 10) || 1; }
+  function adjustFont(d) { applyFont(fontIdx() + d); }
+
+  // ---------- 更新日誌 ----------
+  var CHANGELOG = [
+    { v: '0.2.0', d: '2026-09-28', items: [
+      ['新增地點搜尋。', 'You can now search for places.'],
+      ['新增常用地點。', 'You can now save places.'],
+      ['新增英文介面。', 'English is now available.']
+    ] },
+    { v: '0.1.0', d: '2026-09-28', items: [
+      ['北北桃即時車位地圖。', 'Live parking map for northern Taiwan.']
+    ] }
+  ];
+  // 家族共用的同一個社群連結(跟 CrewSync / PeakLog / Jetstream 同一顆)
+  var LINE_URL = 'https://line.me/ti/g2/ArAw4k1D9vXEAMtBsButFLzSFjXzEvFXfKHQ2A';
+  var SUPPORT_MAIL = 'support@h-peak.com';
+  function reportMailto() {
+    var T = function (zh, en) { return lang === 'en' ? en : zh; };
+    var L = [];
+    L.push(T('(請在這裡描述問題,下面是診斷資訊,可以自行刪除)',
+             '(Describe the problem here. Diagnostics below — feel free to delete.)'));
+    L.push(''); L.push('---');
+    L.push('App: 停哪裡 / Taiwan Parking  v' + VERSION);
+    L.push('Lang: ' + lang);
+    var at = parseInt(lsGet(LS.at) || '0', 10);
+    L.push('Data fetched: ' + (at ? new Date(at).toISOString() : 'n/a'));
+    if (META && META.generated) L.push('Data generated: ' + META.generated);
+    L.push('Places: ' + P.length);
+    if (META && META.sources) {
+      Object.keys(META.sources).forEach(function (k) {
+        var sc = META.sources[k];
+        L.push('  ' + k + ': ' + (sc.ok ? 'ok ' + sc.count : 'FAIL ' + (sc.error || '')));
+      });
+    }
+    if (map) {
+      var c = map.getCenter();
+      L.push('Map: ' + c.lat.toFixed(5) + ',' + c.lng.toFixed(5) + ' z' + map.getZoom());
+    }
+    if (sel) L.push('Viewing: ' + (sel.n || '') + ' (' + sel.c + ')');
+    L.push('UA: ' + (navigator.userAgent || '').slice(0, 120));
+    var subj = T('停哪裡 回報 v', 'Taiwan Parking report v') + VERSION;
+    return 'mailto:' + SUPPORT_MAIL +
+           '?subject=' + encodeURIComponent(subj) +
+           '&body=' + encodeURIComponent(L.join('\n'));
+  }
+
+  function openAbout() {
+    var T = function (zh, en) { return lang === 'en' ? en : zh; };
+    $('aboutTop').innerHTML =
+      '<div class="ovhead"><strong>' + T('更新日誌', 'What’s new') + '</strong>' +
+      '<button id="aboutClose" class="iconbtn" aria-label="' + T('關閉', 'Close') + '">' +
+      '<svg viewBox="0 0 24 24" width="17" height="17"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>' +
+      '</button></div>' +
+      '<div class="ovsub">' + T('北北桃即時車位地圖', 'Live parking map for northern Taiwan') + '</div>' +
+      '<div class="ovver">v' + VERSION + '</div>' +
+      '<div class="lang2">' +
+        '<button id="clZh" class="' + (lang === 'zh' ? 'on' : '') + '">中文</button>' +
+        '<button id="clEn" class="' + (lang === 'en' ? 'on' : '') + '">EN</button>' +
+      '</div>' +
+      /* 社群(公開、可匿名)與私下回報各一半。分兩顆的理由:回報常要附截圖,
+         貼進社群等於公開給群裡每個人看。⚠ 右邊那顆不要叫「寄信」——
+         使用者不寄信(信是伺服器寄的),叫寄信他會以為要跳出信箱而不敢按。 */
+      '<div class="rep2">' +
+        '<a class="comm" href="' + LINE_URL + '" target="_blank" rel="noopener">💬 ' +
+          T('社群討論', 'Community') + '<div class="sub2">' + T('可匿名 Anonymous', 'Anonymous') + '</div></a>' +
+        '<a class="priv" id="clReport" href="' + reportMailto() + '">🔒 ' +
+          T('私下回報', 'Private report') + '<div class="sub2">' + T('不公開 Private', 'Private') + '</div></a>' +
+      '</div>';
+
+    var h = '';
+    CHANGELOG.forEach(function (c) {
+      h += '<div class="cl"><span class="v">v' + c.v + '</span><span class="d">' + c.d + '</span><ul>';
+      c.items.forEach(function (it) { h += '<li>' + esc(lang === 'en' ? it[1] : it[0]) + '</li>'; });
+      h += '</ul></div>';
+    });
+    $('aboutBody').innerHTML = h;
+
+    // Apple 送審要求政策與支援入口要找得到,不能只藏在捲動內容尾端
+    $('aboutFoot').innerHTML =
+      '<span>' + T('資料來源:臺北市、新北市、桃園市政府開放資料平臺',
+                   'Data: Taipei, New Taipei & Taoyuan open data') + '</span>';
+
+    $('clZh').addEventListener('click', function () { applyLang('zh'); openAbout(); });
+    $('clEn').addEventListener('click', function () { applyLang('en'); openAbout(); });
+    $('aboutOv').hidden = false;
+  }
+
+  // ---------- 定位 ----------
+  function locate() {
+    var Geo = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Geolocation) || null;
+    var done = function (lat, lon) {
+      setMe(lat, lon, true);
+      map.setView([lat, lon], Math.max(map.getZoom(), 15));
+      toast(t('located'));
+    };
+    var fail = function () {
+      toast(t('locFail'), 3600);
+    };
+    if (Geo && Geo.getCurrentPosition) {
+      Geo.requestPermissions().catch(function () { return null; }).then(function () {
+        return Geo.getCurrentPosition({ enableHighAccuracy: true, timeout: 12000 });
+      }).then(function (pos) { done(pos.coords.latitude, pos.coords.longitude); }).catch(fail);
+    } else if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        function (pos) { done(pos.coords.latitude, pos.coords.longitude); },
+        fail, { enableHighAccuracy: true, timeout: 12000 });
+    } else fail();
+  }
+
+  // ---------- 事件 ----------
+  function bind() {
+    document.querySelectorAll('[data-filter]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        document.querySelectorAll('[data-filter]').forEach(function (x) { x.classList.remove('on'); });
+        b.classList.add('on'); filterAvail = b.dataset.filter;
+        refreshPins(); renderList();
+      });
+    });
+    document.querySelectorAll('[data-kind]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        document.querySelectorAll('[data-kind]').forEach(function (x) { x.classList.remove('on'); });
+        b.classList.add('on'); filterKind = b.dataset.kind;
+        refreshPins(); renderList();
+      });
+    });
+    document.querySelectorAll('[data-sort]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        document.querySelectorAll('[data-sort]').forEach(function (x) { x.classList.remove('on'); });
+        b.classList.add('on'); sortMode = b.dataset.sort; renderList();
+      });
+    });
+    var lb = $('locBtn'), holdT = null;
+    lb.addEventListener('click', function () { if (!picking) locate(); else setPicking(false); });
+    lb.addEventListener('pointerdown', function () {
+      holdT = setTimeout(function () { setPicking(true); toast(t('pickTip')); }, 550);
+    });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) {
+      lb.addEventListener(ev, function () { clearTimeout(holdT); });
+    });
+    initSheetDrag();
+    var bar = $('hp-tabbar');
+    bar.addEventListener('click', function (e) {
+      /* 🔴 右邊那組是「換設定」,不是「點到別的地方」—— 擋掉冒泡,
+         不然每切一次就把開著的面板關掉一次(家族規格的理由照抄)。 */
+      if (e.target.closest && e.target.closest('.hp-tab-util')) e.stopPropagation();
+      var lg = e.target.closest('.hp-lang-opt');
+      if (lg) { applyLang(lg.dataset.lg); return; }
+      var th = e.target.closest('.hp-theme-opt');
+      if (th) { applyTheme(th.dataset.th); return; }
+      var fb = e.target.closest('.hp-font-btn');
+      if (fb) { adjustFont(Number(fb.dataset.fd)); return; }
+      if (e.target.id === 'hp-ver') { openAbout(); return; }
+      var btn = e.target.closest('.hp-tab-btn');
+      if (btn) switchTab(btn.dataset.hp);
+    });
+    // 版號是 role=button,鍵盤也要到得了
+    bar.addEventListener('keydown', function (e) {
+      if (e.target && e.target.id === 'hp-ver' && (e.key === 'Enter' || e.key === ' ')) {
+        e.preventDefault(); openAbout();
+      }
+    });
+    $('hp-ver').textContent = 'v' + VERSION;
+    var qi = $('q'); if (qi) qi.placeholder = t('qph');
+    var qh = $('qhint'); if (qh && !(qi && qi.value.trim())) qh.textContent = t('qhint');
+    document.querySelectorAll('[data-i18n]').forEach(function (e) { e.textContent = t(e.dataset.i18n); });
+    renderList(); if (curTab === 'fav') renderFav();
+    if (curTab === 'set') renderSettings(); if (curTab === 'search') runSearch();
+    if (sel) openSheet(sel);
+    renderStale(false);
+  }
+
+  // ---------- 字級 ----------
+  var FS = [15, 16, 17, 19, 21];
+  function applyFont(i) {
+    i = Math.max(0, Math.min(FS.length - 1, i));
+    lsSet(LS.font, String(i));
+    document.documentElement.style.fontSize = FS[i] + 'px';
+    if (map) setTimeout(function () { map.invalidateSize(); }, 60);
+  }
+  function fontIdx() { return parseInt(lsGet(LS.font) || '1', 10) || 1; }
+  function adjustFont(d) { applyFont(fontIdx() + d); }
 
   // ---------- 更新日誌 ----------
   var CHANGELOG = [
@@ -834,13 +1011,6 @@
     document.querySelectorAll('.tab').forEach(function (b) {
       b.addEventListener('click', function () { switchTab(b.dataset.tab); });
     });
-    $('themeBtn').addEventListener('click', cycleTheme);
-    $('langBtn').addEventListener('click', function () { applyLang(lang === 'zh' ? 'en' : 'zh'); });
-    $('fontUp').addEventListener('click', function () { applyFont(fontIdx() + 1); });
-    $('fontDn').addEventListener('click', function () { applyFont(fontIdx() - 1); });
-    $('aboutOv').addEventListener('click', function (e) { if (e.target === $('aboutOv')) $('aboutOv').hidden = true; });
-    $('verBtn').textContent = 'v' + VERSION;
-    $('verBtn').addEventListener('click', openAbout);
     var qi = $('q');
     if (qi) {
       var qt = null;
@@ -882,7 +1052,7 @@
   }
 
   function boot() {
-    applyTheme(lsGet(LS.theme) || 'auto');
+    applyTheme(lsGet(LS.theme) || 'dark');
     applyFont(fontIdx());
     initMap(); bind();
     switchTab('near');
