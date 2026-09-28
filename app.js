@@ -5,10 +5,10 @@
   'use strict';
 
   var VERSION = '0.2.0';
-  var DATA_BASE = 'https://dominiclu82.github.io/parking-data/data/';
+  var DATA_BASE = 'https://data.h-peak.com/data/';
   var LINE_URL = 'https://line.me/ti/g2/ArAw4k1D9vXEAMtBsButFLzSFjXzEvFXfKHQ2A';  // 家族共用
   var SUPPORT_MAIL = 'support@h-peak.com';
-  var LEGAL = 'https://dominiclu82.github.io/parking-web/legal/';
+  var LEGAL = 'https://parking.h-peak.com/legal/';
   var HOME = { lat: 25.0777, lon: 121.2328, z: 14 };
   var MAX_PINS = 260;
   var LS = { data:'pk.data', meta:'pk.meta', at:'pk.at', me:'pk.me',

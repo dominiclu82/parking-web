@@ -1,6 +1,6 @@
 /* 停哪裡 —— 離線快取。
    殼走 network-first(不然改版推不出去);圖磚與資料走 stale-while-revalidate。 */
-var V = 'pk-20260928125814';
+var V = 'pk-20260928130650';
 var SHELL = [
   './', 'index.html', 'app.css', 'app.js',
   'vendor/leaflet.js', 'vendor/leaflet.css',
@@ -69,7 +69,7 @@ self.addEventListener('fetch', function (e) {
   }
 
   // 停車資料:先走網路,失敗退快取(資料新鮮度比離線重要,App 端自己會標示)
-  if (/parking-data/.test(url.pathname) || /\/data\//.test(url.pathname)) {
+  if (/^data\.h-peak\.com$/.test(url.hostname) || /parking-data/.test(url.pathname) || /\/data\//.test(url.pathname)) {
     e.respondWith(
       fetch(req).then(function (res) {
         if (res && res.status === 200) caches.open(DATA).then(function (c) { c.put(req, res.clone()); });
